@@ -1,0 +1,197 @@
+/* ----------------------------------------------------------------------------
+   Lenis smooth-scroll rules. lenis@1.3 ships no stylesheet, so the canonical
+   rules are inlined here. They keep native scroll height correct and disable
+   CSS smooth-scroll while Lenis is driving.
+---------------------------------------------------------------------------- */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------------------------
+   Design tokens. A single "night" base so the whole journey reads as one world
+   that shifts mood (spec §6.1). Colour encodes service category.
+---------------------------------------------------------------------------- */
+:root {
+  --bg-night: #05070d; /* base night value shared across every dimension */
+  --fg: #f3ede2;
+  --fg-dim: #b9b2a4;
+  --amber: #e8a23d; /* power / electrical (dims 1, 5, 6) */
+  --steel: #8a94a6; /* structure / build (dims 2, 3) */
+  --teal: #43d0c4; /* smart systems (dim 4) */
+  --font-display: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg-night);
+  color: var(--fg);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ----------------------------------------------------------------------------
+   The 3D experience sits fixed behind the scrollable, crawlable content.
+   Lenis drives real (untransformed) scroll, so `position: fixed` is safe here.
+---------------------------------------------------------------------------- */
+.experience-root {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+.experience-root canvas {
+  display: block;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+}
+.content-section {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(1.5rem, 6vw, 8rem);
+  max-width: 64rem;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 1rem;
+}
+
+.brandmark {
+  text-transform: uppercase;
+  font-size: clamp(3rem, 12vw, 9rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+}
+
+.tagline {
+  margin-top: 1.25rem;
+  font-size: clamp(1rem, 2.4vw, 1.5rem);
+  font-weight: 300;
+  color: var(--fg-dim);
+  max-width: 40ch;
+}
+
+.narrative {
+  font-size: clamp(1.6rem, 5vw, 3.25rem);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  max-width: 24ch;
+}
+
+.content-section h2 {
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.services {
+  list-style: none;
+  display: grid;
+  gap: 2.5rem;
+  margin-top: 2rem;
+}
+.service h3 {
+  font-size: clamp(1.25rem, 3vw, 1.8rem);
+  font-weight: 500;
+}
+.service h3 .num {
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+  color: var(--amber);
+  margin-right: 0.75rem;
+}
+.service p {
+  margin-top: 0.5rem;
+  color: var(--fg-dim);
+  font-weight: 300;
+  max-width: 46ch;
+}
+
+.cta {
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--bg-night);
+  background: var(--amber);
+  padding: 0.9rem 1.6rem;
+  border-radius: 2px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(232, 162, 61, 0.35);
+}
+
+/* ----------------------------------------------------------------------------
+   TEMPORARY M0 debug readout (removed when the diegetic HUD lands in M6).
+---------------------------------------------------------------------------- */
+.scroll-debug {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 50;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+  background: rgba(5, 7, 13, 0.6);
+  border: 1px solid rgba(232, 162, 61, 0.25);
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------------------------
+   Reduced-motion safety net (spec §3.5). Full reduced-motion path is built in
+   M7; this at least disables the CTA transition for users who opt out.
+---------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .cta {
+    transition: none;
+  }
+}
