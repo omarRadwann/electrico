@@ -63,6 +63,9 @@ structure · 4 Smart Living Room — smart systems · 5 In-wall Wiring — elect
 - [x] **M0 — Scaffold & renderer.** ✅ One lit cube in a client Canvas via the
   WebGL2 factory; Lenis writes progress to the store; clean console; 60fps.
 - [ ] M1 — Scroll-as-camera spine (Rig + 6 placeholder zones; nail the motion feel).
+  **Prereq: solve real-browser rAF verification (e.g. headed Playwright via the
+  webapp-testing skill).** The preview tab runs `hidden`, freezing requestAnimationFrame,
+  and M1's gate is fundamentally about *animated* motion feel — unjudgeable from a hidden tab.
 - [ ] M2 — Transition system (render targets + blend shader + DimensionManager;
   disposal + active/incoming gating; stable `info.memory`).
 - [ ] M3 — Loop + per-layer fog/grade; 6→1 seamless.
