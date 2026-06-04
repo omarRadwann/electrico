@@ -72,18 +72,21 @@ structure · 4 Smart Living Room — smart systems · 5 In-wall Wiring — elect
   disposal + active/incoming gating; stable `info.memory`).
 - [ ] M3 — Loop + per-layer fog/grade; 6→1 seamless. (Atmosphere: per-layer fog/bg
   lerp DONE in the aliveness pass via `Atmosphere.tsx`; the 6→1 seamless loop still pending.)
-- [ ] M4 — Real scenes 1→6, one at a time. (DONE: D1 City — instanced towers +
-  ~1800 flickering window lights; D6 Current — additive energy-flow shader. PENDING:
-  D2 Building / D3 Frame / D4 Room / D5 Wiring still gateway-ring placeholders; per-scene
-  interactions; optional compressed GLB assets — current scenes are procedural/texture-free.)
+- [~] M4 — Procedural scenes for ALL SIX dimensions DONE (`src/experience/scenes/`):
+  City (towers + ~1800 flickering windows), Building (lit facade + masses), Frame
+  (instanced steel cage, pulsing), Room (warm interior + teal devices), Wiring (emissive
+  copper conduits, surging), Current (additive energy-flow shader). Each has its one-verb
+  animation. PENDING: the tactile interaction per dimension (§7), richer detailing, and
+  optional compressed GLB assets (scenes are procedural/texture-free for now).
 - [ ] M5 — Postprocessing & kinetic typography. (Bloom + vignette DONE via `Effects.tsx`,
   GPU-verified; DOF, per-layer colour-grade tuning, and SplitText kinetic type pending.)
 - [ ] M6 — Sound + diegetic HUD + content/CTA + skip-to-contact (invoke
   frontend-design skill for the HUD/overlay layer here).
-  NOTE: reconcile the dimension index (`floor(progress*6)`, 6 zones) with the HTML
-  section count (currently 9) — they drift ~1 label out of sync between sample points.
-  Align section→dimension mapping (or pick a deliberate label lead) when the HUD lands;
-  don't inherit the debug readout's approximation.
+  NOTE: the active-dimension index is now correct (Rig uses nearest-zone-by-depth, not
+  floor(p*6)). The remaining reconciliation is the HTML content: the page has 9 scroll
+  sections (hero + 6 narrative + services + contact) but the dive has 6 dimensions, so
+  overlay copy and the active dimension don't map 1:1. Choreograph content reveals to the
+  dimension (or re-section the page) when the HUD/overlays land.
 - [ ] M7 — Quality tiers, mobile/low-tier path, prefers-reduced-motion,
   context-loss/battery fallback, keyboard a11y.
 - [ ] M8 — Lighthouse/SEO/OG, analytics, deploy.
