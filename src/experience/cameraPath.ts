@@ -64,3 +64,69 @@ export const CAMERA_PATH = new THREE.CatmullRomCurve3(
   "centripetal",
   0.5,
 );
+
+// --- Boundary / transition math (spec §3.2: the "moment of impact") ---------
+// The path is arc-length parameterised, so the progress at which the camera sits
+// at each zone is NOT evenly spaced — compute it by sampling depth.
+const _sample = new THREE.Vector3();
+function computeZoneProgress(): number[] {
+  return ZONES.map((zone) => {
+    let bestP = 0;
+    let bestD = Infinity;
+    for (let s = 0; s <= 240; s++) {
+      const p = s / 240;
+      CAMERA_PATH.getPointAt(p, _sample);
+      const d = Math.abs(_sample.z - zone.position.z);
+      if (d < bestD) {
+        bestD = d;
+        bestP = p;
+      }
+    }
+    return bestP;
+  });
+}
+
+/** Progress (0..1) where the camera sits at each zone. */
+export const ZONE_PROGRESS = computeZoneProgress();
+
+/** Progress of each of the 5 boundaries (midpoint between consecutive zones). */
+export const BOUNDARY_PROGRESS = ZONE_PROGRESS.slice(0, -1).map(
+  (p, i) => (p + ZONE_PROGRESS[i + 1]) / 2,
+);
+
+/** Width (in progress) of the transition pulse around a boundary. */
+export const BOUNDARY_EPS = 0.045;
+
+/**
+ * The "moment of impact" primitive — the single source of truth every transition
+ * visual reads. Returns a Gaussian `pulse` (0..1) that peaks as `progress` crosses
+ * a boundary, plus the dimensions it bridges. Pure: call it in useFrame, never
+ * store per-frame.
+ */
+export function boundaryPulse(progress: number): {
+  pulse: number;
+  fromIndex: number;
+  toIndex: number;
+} {
+  let best = 0;
+  let bi = 0;
+  for (let i = 0; i < BOUNDARY_PROGRESS.length; i++) {
+    const d = (progress - BOUNDARY_PROGRESS[i]) / BOUNDARY_EPS;
+    const g = Math.exp(-d * d);
+    if (g > best) {
+      best = g;
+      bi = i;
+    }
+  }
+  return { pulse: best, fromIndex: bi, toIndex: bi + 1 };
+}
+
+// Dev-only: expose for headless numeric verification of the boundary math.
+if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+  (window as unknown as { __boundary?: unknown }).__boundary = {
+    ZONE_PROGRESS,
+    BOUNDARY_PROGRESS,
+    BOUNDARY_EPS,
+    pulse: boundaryPulse,
+  };
+}
