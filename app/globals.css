@@ -76,6 +76,9 @@ a {
 .content {
   position: relative;
   z-index: 1;
+  /* Let pointer events fall through to the 3D canvas (parallax + future scene
+     interactions) — interactive elements below opt back in with pointer-events:auto. */
+  pointer-events: none;
 }
 .content-section {
   min-height: 100vh;
@@ -150,6 +153,7 @@ a {
 .cta {
   display: inline-block;
   align-self: flex-start;
+  pointer-events: auto;
   margin-top: 1.5rem;
   font-family: var(--font-mono);
   font-size: 0.85rem;

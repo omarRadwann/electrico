@@ -20,6 +20,7 @@ export function Rig() {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
   const damped = useRef(0);
+  const pMouse = useRef({ x: 0, y: 0 });
 
   // Dev-only: expose the live camera + renderer so a real (non-hidden) browser
   // can assert the rig moves and read draw-call counts. Stripped in production.
@@ -34,7 +35,7 @@ export function Rig() {
     }
   }, [camera, gl]);
 
-  useFrame((_, dt) => {
+  useFrame((state, dt) => {
     const target = useExperience.getState().progress;
 
     // Critical-damping on top of Lenis' inertia gives the camera *weight*: it
@@ -44,8 +45,20 @@ export function Rig() {
 
     CAMERA_PATH.getPointAt(p, _pos);
     CAMERA_PATH.getTangentAt(p, _tan); // defined at p=1 — avoids lookAt-self.
-    camera.position.copy(_pos);
+
+    // Mouse parallax: the view leans toward the cursor (damped) for responsive,
+    // hand-held life in every dimension. `pointer` is R3F-normalized (-1..1).
+    pMouse.current.x = THREE.MathUtils.damp(pMouse.current.x, state.pointer.x, 3, dt);
+    pMouse.current.y = THREE.MathUtils.damp(pMouse.current.y, state.pointer.y, 3, dt);
+
+    camera.position.set(
+      _pos.x + pMouse.current.x * 0.6,
+      _pos.y + pMouse.current.y * 0.45,
+      _pos.z,
+    );
     _look.copy(_pos).add(_tan);
+    _look.x += pMouse.current.x * 3;
+    _look.y += pMouse.current.y * 2;
     camera.lookAt(_look);
 
     // Active dimension = the zone the camera is physically nearest (by depth).
