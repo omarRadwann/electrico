@@ -48,9 +48,18 @@ export function Rig() {
     _look.copy(_pos).add(_tan);
     camera.lookAt(_look);
 
-    // Active dimension is low-frequency: only write when it actually changes,
-    // so subscribers (HUD, debug) don't churn every frame.
-    const dim = clamp(Math.floor(p * ZONES.length), 0, ZONES.length - 1);
+    // Active dimension = the zone the camera is physically nearest (by depth).
+    // Robust against the path's non-linear arc-length: floor(p*N) drifts a zone
+    // ahead of the camera in the back half. Low-frequency: only write on change.
+    let dim = 0;
+    let best = Infinity;
+    for (let i = 0; i < ZONES.length; i++) {
+      const d = Math.abs(_pos.z - ZONES[i].position.z);
+      if (d < best) {
+        best = d;
+        dim = i;
+      }
+    }
     if (dim !== useExperience.getState().dimension) {
       useExperience.getState().setDimension(dim);
     }

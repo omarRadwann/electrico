@@ -6,8 +6,12 @@ import { useSmoothScroll } from "@/src/hooks/useSmoothScroll";
 import { ScrollDebug } from "@/src/ui/ScrollDebug";
 import { Rig } from "./Rig";
 import { Atmosphere } from "./Atmosphere";
-import { PlaceholderZones } from "./PlaceholderZones";
+import { AmbientDebris } from "./AmbientDebris";
 import { CityScene } from "./scenes/CityScene";
+import { BuildingScene } from "./scenes/BuildingScene";
+import { FrameScene } from "./scenes/FrameScene";
+import { RoomScene } from "./scenes/RoomScene";
+import { WiringScene } from "./scenes/WiringScene";
 import { CurrentScene } from "./scenes/CurrentScene";
 import { Effects } from "./Effects";
 
@@ -16,9 +20,10 @@ import { Effects } from "./Effects";
  * night world behind the page's real HTML content. Lenis owns DOM smooth-scroll
  * (no drei <ScrollControls>); the Rig reads store `progress` in useFrame.
  *
- * Scene content lives along the camera's dive path: the City opens it, gateway
- * rings mark the middle dimensions, the Current closes it. Atmosphere shifts fog
- * + background per layer; Effects adds the bloom that makes the glow read.
+ * All six dimensions now have real procedural scenes laid out along the dive
+ * path. Atmosphere shifts fog + background per layer; Effects adds the bloom
+ * that makes the glow read. (M2's render-target portals/transitions are the next
+ * refinement on top of this continuous fly-through.)
  */
 export function Experience() {
   useSmoothScroll();
@@ -41,10 +46,15 @@ export function Experience() {
           <Rig />
           <Atmosphere />
 
+          {/* Dimensions 1 → 6 along the dive path. */}
           <CityScene />
-          <PlaceholderZones />
+          <BuildingScene />
+          <FrameScene />
+          <RoomScene />
+          <WiringScene />
           <CurrentScene />
 
+          <AmbientDebris />
           <Effects />
         </Canvas>
       </div>
