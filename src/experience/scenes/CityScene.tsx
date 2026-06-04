@@ -22,6 +22,7 @@ const TOWERS = COLS * ROWS;
 const WINDOWS = 1800;
 const SPACING = 8;
 const WIN_COLOR = new THREE.Color("#ffb24d"); // warm amber window light
+const GREEBLE_COUNT = 200; // rooftop detail instances (caps / masts / units)
 
 interface Tower {
   x: number;
@@ -34,6 +35,7 @@ interface Tower {
 export function CityScene() {
   const towersRef = useRef<THREE.InstancedMesh>(null);
   const windowsRef = useRef<THREE.InstancedMesh>(null);
+  const greeblesRef = useRef<THREE.InstancedMesh>(null);
 
   useLayoutEffect(() => {
     const towers = towersRef.current;
@@ -97,6 +99,40 @@ export function CityScene() {
     }
     windows.instanceMatrix.needsUpdate = true;
     if (windows.instanceColor) windows.instanceColor.needsUpdate = true;
+
+    // Rooftop greebles — setback caps, antenna masts, roof units — so the skyline
+    // silhouette reads as buildings, not uniform flat-topped boxes.
+    const greebles = greeblesRef.current;
+    let gi = 0;
+    if (greebles) {
+      for (const t of placed) {
+        const roofY = GROUND_Y + t.h;
+        if (Math.random() < 0.55 && gi < GREEBLE_COUNT) {
+          const capH = 1.5 + Math.random() * 3;
+          dummy.position.set(t.x + (Math.random() - 0.5) * t.w * 0.3, roofY + capH / 2, t.z + (Math.random() - 0.5) * t.d * 0.3);
+          dummy.scale.set(t.w * (0.4 + Math.random() * 0.3), capH, t.d * (0.4 + Math.random() * 0.3));
+          dummy.updateMatrix();
+          greebles.setMatrixAt(gi++, dummy.matrix);
+        }
+        if (Math.random() < 0.35 && gi < GREEBLE_COUNT) {
+          const mastH = 2 + Math.random() * 5;
+          dummy.position.set(t.x + (Math.random() - 0.5) * t.w * 0.4, roofY + mastH / 2, t.z + (Math.random() - 0.5) * t.d * 0.4);
+          dummy.scale.set(0.16, mastH, 0.16);
+          dummy.updateMatrix();
+          greebles.setMatrixAt(gi++, dummy.matrix);
+        }
+        const units = 1 + Math.floor(Math.random() * 2);
+        for (let u = 0; u < units && gi < GREEBLE_COUNT; u++) {
+          const uh = 0.4 + Math.random() * 0.8;
+          dummy.position.set(t.x + (Math.random() - 0.5) * t.w * 0.7, roofY + uh / 2, t.z + (Math.random() - 0.5) * t.d * 0.7);
+          dummy.scale.set(0.5 + Math.random() * 0.7, uh, 0.5 + Math.random() * 0.7);
+          dummy.updateMatrix();
+          greebles.setMatrixAt(gi++, dummy.matrix);
+        }
+      }
+      greebles.count = gi;
+      greebles.instanceMatrix.needsUpdate = true;
+    }
   }, []);
 
   // FLICKER: re-light a few random windows each frame so the city breathes.
@@ -120,7 +156,7 @@ export function CityScene() {
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[CITY.x, GROUND_Y, CITY.z]}>
         <planeGeometry args={[260, 260]} />
         <MeshReflectorMaterial
-          resolution={256}
+          resolution={128}
           mirror={0}
           blur={[300, 300]}
           mixBlur={2.5}
@@ -140,6 +176,12 @@ export function CityScene() {
       >
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="#0b101c" roughness={0.85} metalness={0.15} />
+      </instancedMesh>
+
+      {/* Rooftop greebles — break the flat-top boxes into a real skyline. */}
+      <instancedMesh ref={greeblesRef} args={[undefined, undefined, GREEBLE_COUNT]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#0c1220" roughness={0.8} metalness={0.2} />
       </instancedMesh>
 
       {/* Emissive window lights — unlit basic material so they read as pure glow
