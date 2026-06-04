@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useExperience } from "@/src/store/useExperience";
 import { clamp } from "@/src/lib/math";
-import { CAMERA_PATH, ZONES, boundaryPulse } from "./cameraPath";
+import { CAMERA_PATH, ZONES, ZONE_PROGRESS, boundaryPulse } from "./cameraPath";
 
 // Reusable temporaries — never allocate inside useFrame (spec §10 perf discipline).
 const _pos = new THREE.Vector3();
@@ -69,6 +69,10 @@ export function Rig() {
     _look.copy(_pos).add(_tan);
     _look.x += pMouse.current.x * 3;
     _look.y += pMouse.current.y * 2;
+    // Tilt the gaze down through the Room so its floor-level furniture is framed
+    // (the dive otherwise flies over it). Gaussian peak at the Room, neutral elsewhere.
+    const roomD = (p - ZONE_PROGRESS[3]) / 0.12;
+    _look.y -= Math.exp(-roomD * roomD) * 1.2;
     camera.lookAt(_look);
 
     // Active dimension = the zone the camera is physically nearest (by depth).

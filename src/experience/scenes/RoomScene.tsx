@@ -30,20 +30,30 @@ const LAMP_X = A.x + 6.5;
 const LAMP_Z = A.z - 3;
 
 useGLTF.preload("/models/sofa/Sofa_01_1k.gltf");
+useGLTF.preload("/models/coffeetable/CoffeeTable_01_1k.gltf");
+useGLTF.preload("/models/armchair/ArmChair_01_1k.gltf");
+
+function enableShadows(root: THREE.Object3D) {
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (m.isMesh) {
+      m.castShadow = true;
+      m.receiveShadow = true;
+    }
+  });
+}
 
 export function RoomScene() {
-  // Real CC0 sofa (Poly Haven) replacing the box. Suspends while loading (see the
-  // <Suspense> wrap in Experience). Traverse once to enable shadow cast/receive.
+  // Real CC0 furniture (Poly Haven) replacing the boxes. Suspends while loading
+  // (see the <Suspense> wrap in Experience). Traverse once for shadow cast/receive.
   const { scene: sofa } = useGLTF("/models/sofa/Sofa_01_1k.gltf");
+  const { scene: table } = useGLTF("/models/coffeetable/CoffeeTable_01_1k.gltf");
+  const { scene: chair } = useGLTF("/models/armchair/ArmChair_01_1k.gltf");
   useLayoutEffect(() => {
-    sofa.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (m.isMesh) {
-        m.castShadow = true;
-        m.receiveShadow = true;
-      }
-    });
-  }, [sofa]);
+    enableShadows(sofa);
+    enableShadows(table);
+    enableShadows(chair);
+  }, [sofa, table, chair]);
 
   useFrame((s) => {
     DEVICE.emissiveIntensity = 0.9 + 0.8 * (0.5 + 0.5 * Math.sin(s.clock.elapsedTime * 1.2));
@@ -84,9 +94,7 @@ export function RoomScene() {
 
       {/* Real sofa (Poly Haven CC0 GLB) — scale/rotation tuned to the room. */}
       <primitive object={sofa} position={[A.x - 3, FLOOR_Y, A.z + 1]} scale={5.5} rotation={[0, Math.PI, 0]} />
-      <mesh position={[A.x - 4, FLOOR_Y + 0.4, A.z - 0.6]} material={WOOD} castShadow receiveShadow>
-        <boxGeometry args={[2.4, 0.5, 1.1]} />
-      </mesh>
+      <primitive object={table} position={[A.x - 3, FLOOR_Y, A.z - 1.5]} scale={5} rotation={[0, 0.4, 0]} />
       {/* Bookshelf + rug + side table — silhouettes that give the room volume. */}
       <mesh position={[A.x + 7, FLOOR_Y + 3, A.z - 13]} material={WOOD} castShadow receiveShadow>
         <boxGeometry args={[3.2, 6, 0.6]} />
@@ -94,9 +102,7 @@ export function RoomScene() {
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[A.x - 4, FLOOR_Y + 0.03, A.z + 1]} material={RUG} receiveShadow>
         <planeGeometry args={[7.5, 5.5]} />
       </mesh>
-      <mesh position={[A.x + 3.5, FLOOR_Y + 0.55, A.z + 3.5]} material={WOOD} castShadow receiveShadow>
-        <boxGeometry args={[1, 1.1, 1]} />
-      </mesh>
+      <primitive object={chair} position={[A.x + 4, FLOOR_Y, A.z + 2]} scale={5} rotation={[0, -0.9, 0]} />
 
       {/* Smart devices (teal): a wall panel + a speaker on the table + a sensor. */}
       <mesh position={[A.x, FLOOR_Y + 7, A.z - 13.6]} material={DEVICE}>
