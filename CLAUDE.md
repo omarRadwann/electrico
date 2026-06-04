@@ -68,10 +68,17 @@ structure · 4 Smart Living Room — smart systems · 5 In-wall Wiring — elect
   zones + instanced debris; critical-damped scroll for cinematic weight. Verified in
   a real (visible) browser: 60fps, camZ monotonic 8→−202 through all six zones,
   lateral drift present, zero console errors, end frame holds on THE CURRENT.
-- [ ] M2 — Transition system (render targets + blend shader + DimensionManager;
-  disposal + active/incoming gating; stable `info.memory`).
-- [ ] M3 — Loop + per-layer fog/grade; 6→1 seamless. (Atmosphere: per-layer fog/bg
-  lerp DONE in the aliveness pass via `Atmosphere.tsx`; the 6→1 seamless loop still pending.)
+- [x] **M2 — Transitions DONE**, via focal-element flashes — NOT FBO compositing.
+  Rationale: the dive is one continuous world (not separate scenes), so render-target
+  seam-hiding isn't needed; the signature is the *moment of falling through*. `boundaryPulse`
+  math (`cameraPath.ts`) + a billboarded additive flash (`Transitions.tsx`) tinted to the
+  incoming dimension + a Rig damping-kick at each of the 5 boundaries. drei portals
+  intentionally skipped (read as "a TV showing the other dimension", not "passing through").
+- [~] M3 — Atmosphere per-layer fog/bg lerp DONE (`Atmosphere.tsx`). REMAINING = the
+  seamless 6→1 ENDLESS LOOP (Current→City): enable Lenis `infinite` scroll (or scroll-wrap),
+  reuse the boundary system at p=1 (flash masks the wrap), and resolve the Current's energy
+  into the City's window lights (§7). The nuance to get right is content-repeat on wrap
+  (the HTML sections re-showing from the top — consistent since top=City=loop target).
 - [~] M4 — Procedural scenes for ALL SIX dimensions DONE (`src/experience/scenes/`):
   City (towers + ~1800 flickering windows), Building (lit facade + masses), Frame
   (instanced steel cage, pulsing), Room (warm interior + teal devices), Wiring (emissive
