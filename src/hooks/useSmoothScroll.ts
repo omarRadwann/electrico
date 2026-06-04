@@ -20,6 +20,12 @@ export function useSmoothScroll(): void {
   useEffect(() => {
     const lenis = new Lenis({ autoRaf: true });
 
+    // Dev-only: expose the Lenis instance so a real browser can drive scroll
+    // deterministically (lenis.scrollTo) during verification. Stripped in prod.
+    if (process.env.NODE_ENV !== "production") {
+      (window as unknown as { __lenis?: Lenis }).__lenis = lenis;
+    }
+
     const unsubscribe = lenis.on("scroll", (l: Lenis) => {
       setScroll(l.scroll, l.progress, l.velocity);
     });

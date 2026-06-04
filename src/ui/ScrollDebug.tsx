@@ -1,25 +1,23 @@
 "use client";
 
 import { useExperience } from "@/src/store/useExperience";
+import { ZONES } from "@/src/experience/cameraPath";
 
 /**
- * TEMPORARY M0 readout that proves the Lenis -> store wiring (the M0 gate:
- * "smooth scroll value visible in the store"). The real diegetic HUD — depth
- * indicator + layer titles — replaces this in M6.
- *
- * It subscribes to the per-frame `progress`, which is acceptable for a throwaway
- * debug element but is the pattern the production Rig must NOT copy (see the
- * per-frame note in useExperience).
+ * TEMPORARY readout proving the scroll -> store -> camera spine (the diegetic
+ * HUD replaces it in M6). It subscribes to the per-frame `progress`, which is
+ * the deliberate exception to the per-frame no-subscribe rule — fine for a
+ * throwaway debug element, but the pattern the Rig must NOT copy.
  */
 export function ScrollDebug() {
   const progress = useExperience((s) => s.progress);
-  const scroll = useExperience((s) => s.scroll);
-  const dimension = Math.min(6, Math.floor(progress * 6) + 1);
+  const dimension = useExperience((s) => s.dimension);
+  const zone = ZONES[dimension]?.name ?? "—";
 
   return (
     <div className="scroll-debug" aria-hidden="true">
-      M0 · progress {progress.toFixed(3)} · {Math.round(scroll)}px · dim{" "}
-      {dimension}/6
+      M1 · {(progress * 100).toFixed(0)}% · {String(dimension + 1).padStart(2, "0")}{" "}
+      {zone}
     </div>
   );
 }

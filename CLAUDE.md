@@ -29,7 +29,7 @@ verified versions, and the milestone tracker.
 ## Stack — verified versions (installed 2026-06-03)
 next 16.2.7 · react/react-dom 19.2.4 · three 0.184 · @react-three/fiber 9.6.1 ·
 @react-three/drei 10.7.7 · @react-three/postprocessing 3.0.4 (added at M5) ·
-lenis 1.3.23 · zustand 5.0.14 · gsap 3.15 (added at M1). TS strict.
+lenis 1.3.23 · zustand 5.0.14 · gsap 3.15 (added at M5 for kinetic type). TS strict.
 
 ## Architecture decisions
 - **Renderer: WebGL2 (spec §5.1).** All renderer creation goes through the
@@ -62,10 +62,11 @@ structure · 4 Smart Living Room — smart systems · 5 In-wall Wiring — elect
 ## Build sequence tracker (M0→M8, gate each before the next; commit per milestone)
 - [x] **M0 — Scaffold & renderer.** ✅ One lit cube in a client Canvas via the
   WebGL2 factory; Lenis writes progress to the store; clean console; 60fps.
-- [ ] M1 — Scroll-as-camera spine (Rig + 6 placeholder zones; nail the motion feel).
-  **Prereq: solve real-browser rAF verification (e.g. headed Playwright via the
-  webapp-testing skill).** The preview tab runs `hidden`, freezing requestAnimationFrame,
-  and M1's gate is fundamentally about *animated* motion feel — unjudgeable from a hidden tab.
+- [x] **M1 — Scroll-as-camera spine.** ✅ Single-camera `Rig` flies a centripetal
+  Catmull-Rom path (`src/experience/cameraPath.ts`) through 6 placeholder gateway
+  zones + instanced debris; critical-damped scroll for cinematic weight. Verified in
+  a real (visible) browser: 60fps, camZ monotonic 8→−202 through all six zones,
+  lateral drift present, zero console errors, end frame holds on THE CURRENT.
 - [ ] M2 — Transition system (render targets + blend shader + DimensionManager;
   disposal + active/incoming gating; stable `info.memory`).
 - [ ] M3 — Loop + per-layer fog/grade; 6→1 seamless.
@@ -76,6 +77,18 @@ structure · 4 Smart Living Room — smart systems · 5 In-wall Wiring — elect
 - [ ] M7 — Quality tiers, mobile/low-tier path, prefers-reduced-motion,
   context-loss/battery fallback, keyboard a11y.
 - [ ] M8 — Lighthouse/SEO/OG, analytics, deploy.
+
+## Verification (the headless preview tab freezes rAF)
+The Claude preview tab runs `visibilityState: hidden` → requestAnimationFrame is frozen
+→ R3F/Lenis never tick (canvas stuck at 300×150, fps 0). Structural checks
+(typecheck/lint/build, console errors, DOM/SEO) DO work there; *animated* behaviour does
+NOT. To verify motion, run a VISIBLE Playwright page against the dev server:
+`python scripts/verify-dive.py` (screenshots → <temp>/electrico-verify/). It uses dev-only
+`window` hooks `__experience` (store), `__lenis`, `__camera`, driving
+`__lenis.scrollTo(p*limit,{immediate:true})` and reading `__camera.position`.
+GOTCHA: after editing, Turbopack HMR can desync `.next` (500 "global-error … React Client
+Manifest"). Restart with a cleared `.next` (`rm -rf .next`) before verifying — don't trust
+HMR for a verification run.
 
 ## Commands
 `npm run dev` (Turbopack) · `npm run build` · `npm run typecheck` · `npm run lint`
