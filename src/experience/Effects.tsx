@@ -19,6 +19,10 @@ import {
 export function Effects() {
   return (
     <EffectComposer multisampling={0}>
+      {/* NOTE: tried N8AO (contact AO) here — dropped fps 67->44 on the target
+          integrated GPU (Intel Iris Xe), violating the 60fps gate. The env IBL
+          already supplies material depth; revisit AO only with a heavy quality
+          dial-down or for higher-tier devices (M7). */}
       {/* threshold nudged to 0.25 so env-lit (non-emissive) surfaces don't bloom. */}
       <Bloom
         luminanceThreshold={0.25}
