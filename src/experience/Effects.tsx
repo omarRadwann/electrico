@@ -4,6 +4,7 @@ import {
   Vignette,
   HueSaturation,
   BrightnessContrast,
+  SMAA,
 } from "@react-three/postprocessing";
 
 /**
@@ -34,6 +35,9 @@ export function Effects() {
       {/* Subtle cinematic grade — slight desaturate + a touch of contrast. */}
       <HueSaturation saturation={-0.08} />
       <BrightnessContrast brightness={0} contrast={0.06} />
+      {/* Morphological AA — kills the jagged-edge "cheap render" tell. MSAA is
+          off (it fights bloom), so SMAA does the edge cleanup as a post pass. */}
+      <SMAA />
       <Vignette offset={0.3} darkness={0.72} />
     </EffectComposer>
   );

@@ -71,17 +71,22 @@ export function CityScene() {
       const yy = GROUND_Y + 1 + Math.random() * (t.h - 1.5);
       const onX = Math.random() < 0.5;
       const sign = Math.random() < 0.5 ? 1 : -1;
+      const ww = 0.18 + Math.random() * 0.14; // window width
+      const wh = 0.3 + Math.random() * 0.26; // window height (taller than wide)
       let x: number;
       let z: number;
+      // Flush with the facade (not proud) + thin along the face normal, so each
+      // window reads as set *into* the tower, framed by the dark wall edge.
       if (onX) {
-        x = t.x + sign * (t.w / 2 + 0.04);
+        x = t.x + sign * (t.w / 2);
         z = t.z + (Math.random() - 0.5) * t.d * 0.85;
+        dummy.scale.set(0.06, wh, ww);
       } else {
-        z = t.z + sign * (t.d / 2 + 0.04);
+        z = t.z + sign * (t.d / 2);
         x = t.x + (Math.random() - 0.5) * t.w * 0.85;
+        dummy.scale.set(ww, wh, 0.06);
       }
       dummy.position.set(x, yy, z);
-      dummy.scale.setScalar(0.16 + Math.random() * 0.12);
       dummy.updateMatrix();
       windows.setMatrixAt(wi, dummy.matrix);
 

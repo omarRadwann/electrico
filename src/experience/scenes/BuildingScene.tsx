@@ -65,6 +65,23 @@ export function BuildingScene() {
         <boxGeometry args={[1, 1, 1]} />
         <meshBasicMaterial toneMapped={false} />
       </instancedMesh>
+
+      {/* Glass curtain in front of the windows — they now read as lit interiors
+          behind glass (faint refraction + IBL sheen), not stickers on a wall.
+          transmission adds one render pass; fine for a single plane. */}
+      <mesh position={[A.x, A.y, FACADE_Z + 0.5]}>
+        <planeGeometry args={[FW + 3, FH + 4]} />
+        <meshPhysicalMaterial
+          transmission={0.6}
+          roughness={0.1}
+          thickness={0.5}
+          ior={1.45}
+          metalness={0}
+          color="#aebed6"
+          transparent
+          opacity={0.85}
+        />
+      </mesh>
     </group>
   );
 }
