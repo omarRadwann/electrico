@@ -10,16 +10,19 @@ import { ZONES } from "./cameraPath";
  */
 
 function Gateways() {
+  // Dimensions 1 (City) and 6 (Current) are real scenes now; the middle four
+  // (Building, Frame, Room, Wiring) keep their placeholder gateway rings until
+  // their own scenes land. They still glow nicely through the bloom pass.
   return (
     <>
-      {ZONES.map((z) => (
+      {ZONES.filter((z) => z.index >= 1 && z.index <= 4).map((z) => (
         <mesh key={z.index} position={z.position}>
           <torusGeometry args={[3.2, 0.12, 16, 80]} />
           {/* toneMapped=false keeps the rim punchy for the bloom pass added in M5 */}
           <meshStandardMaterial
             color={z.color}
             emissive={z.color}
-            emissiveIntensity={1.4}
+            emissiveIntensity={2.4}
             toneMapped={false}
             roughness={0.4}
             metalness={0.2}

@@ -18,15 +18,21 @@ const _look = new THREE.Vector3();
  */
 export function Rig() {
   const camera = useThree((s) => s.camera);
+  const gl = useThree((s) => s.gl);
   const damped = useRef(0);
 
-  // Dev-only: expose the live camera so a real (non-hidden) browser can assert
-  // the rig actually moves. Stripped from production builds.
+  // Dev-only: expose the live camera + renderer so a real (non-hidden) browser
+  // can assert the rig moves and read draw-call counts. Stripped in production.
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") {
-      (window as unknown as { __camera?: THREE.Camera }).__camera = camera;
+      const w = window as unknown as {
+        __camera?: THREE.Camera;
+        __gl?: THREE.WebGLRenderer;
+      };
+      w.__camera = camera;
+      w.__gl = gl;
     }
-  }, [camera]);
+  }, [camera, gl]);
 
   useFrame((_, dt) => {
     const target = useExperience.getState().progress;

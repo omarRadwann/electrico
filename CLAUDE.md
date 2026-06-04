@@ -29,6 +29,7 @@ verified versions, and the milestone tracker.
 ## Stack — verified versions (installed 2026-06-03)
 next 16.2.7 · react/react-dom 19.2.4 · three 0.184 · @react-three/fiber 9.6.1 ·
 @react-three/drei 10.7.7 · @react-three/postprocessing 3.0.4 (added at M5) ·
+@react-three/postprocessing 3.0.4 + postprocessing 6.39.1 (installed; bloom live) ·
 lenis 1.3.23 · zustand 5.0.14 · gsap 3.15 (added at M5 for kinetic type). TS strict.
 
 ## Architecture decisions
@@ -69,9 +70,14 @@ structure · 4 Smart Living Room — smart systems · 5 In-wall Wiring — elect
   lateral drift present, zero console errors, end frame holds on THE CURRENT.
 - [ ] M2 — Transition system (render targets + blend shader + DimensionManager;
   disposal + active/incoming gating; stable `info.memory`).
-- [ ] M3 — Loop + per-layer fog/grade; 6→1 seamless.
-- [ ] M4 — Real scenes 1→6, one at a time (compressed assets, one interaction each).
-- [ ] M5 — Postprocessing & kinetic typography (SplitText).
+- [ ] M3 — Loop + per-layer fog/grade; 6→1 seamless. (Atmosphere: per-layer fog/bg
+  lerp DONE in the aliveness pass via `Atmosphere.tsx`; the 6→1 seamless loop still pending.)
+- [ ] M4 — Real scenes 1→6, one at a time. (DONE: D1 City — instanced towers +
+  ~1800 flickering window lights; D6 Current — additive energy-flow shader. PENDING:
+  D2 Building / D3 Frame / D4 Room / D5 Wiring still gateway-ring placeholders; per-scene
+  interactions; optional compressed GLB assets — current scenes are procedural/texture-free.)
+- [ ] M5 — Postprocessing & kinetic typography. (Bloom + vignette DONE via `Effects.tsx`,
+  GPU-verified; DOF, per-layer colour-grade tuning, and SplitText kinetic type pending.)
 - [ ] M6 — Sound + diegetic HUD + content/CTA + skip-to-contact (invoke
   frontend-design skill for the HUD/overlay layer here).
   NOTE: reconcile the dimension index (`floor(progress*6)`, 6 zones) with the HTML
@@ -93,6 +99,14 @@ NOT. To verify motion, run a VISIBLE Playwright page against the dev server:
 GOTCHA: after editing, Turbopack HMR can desync `.next` (500 "global-error … React Client
 Manifest"). Restart with a cleared `.next` (`rm -rf .next`) before verifying — don't trust
 HMR for a verification run.
+
+GOTCHA 2 — BLOOM/GLOW NEEDS A REAL GPU. SwiftShader (headless software WebGL) renders the
+scene but CANNOT composite bloom / float-texture postprocessing, so glow is invisible in the
+headless verify-dive.py. For any glow/aesthetic check, run a HEADED real-GPU Playwright page
+(`C:\tmp\electrico-verify\headed.py` is the template; uses ANGLE/D3D11 here, ~100fps) — a
+browser window opens briefly. Headless verify-dive.py is for camera/structure/no-errors and
+relative-fps only. Also: draw-call telemetry reads `1` under EffectComposer (it's the final
+fullscreen pass) — count real scene draws with bloom toggled off.
 
 ## Commands
 `npm run dev` (Turbopack) · `npm run build` · `npm run typecheck` · `npm run lint`

@@ -5,16 +5,20 @@ import { createRenderer } from "@/src/three/createRenderer";
 import { useSmoothScroll } from "@/src/hooks/useSmoothScroll";
 import { ScrollDebug } from "@/src/ui/ScrollDebug";
 import { Rig } from "./Rig";
+import { Atmosphere } from "./Atmosphere";
 import { PlaceholderZones } from "./PlaceholderZones";
+import { CityScene } from "./scenes/CityScene";
+import { CurrentScene } from "./scenes/CurrentScene";
+import { Effects } from "./Effects";
 
 /**
- * The 3D experience island (a client component). One <Canvas>, one camera (the
- * Rig), behind the page's real HTML content. There is intentionally NO drei
- * <ScrollControls>: Lenis owns smooth scroll on the DOM and the Rig reads the
- * store's `progress` in useFrame to fly the camera.
+ * The 3D experience island. One <Canvas>, one camera (the Rig), one continuous
+ * night world behind the page's real HTML content. Lenis owns DOM smooth-scroll
+ * (no drei <ScrollControls>); the Rig reads store `progress` in useFrame.
  *
- * M1 scope = the scroll-as-camera SPINE with placeholder zones. Real scenes,
- * render-target transitions, postprocessing and audio arrive in later milestones.
+ * Scene content lives along the camera's dive path: the City opens it, gateway
+ * rings mark the middle dimensions, the Current closes it. Atmosphere shifts fog
+ * + background per layer; Effects adds the bloom that makes the glow read.
  */
 export function Experience() {
   useSmoothScroll();
@@ -27,15 +31,21 @@ export function Experience() {
           dpr={[1, 2]}
           camera={{ fov: 55, near: 0.1, far: 2000, position: [0, 0, 8] }}
         >
-          {/* Single continuous "night" world; per-layer fog/grade comes in M3. */}
+          {/* Single continuous "night" world; Atmosphere shifts these per layer. */}
           <color attach="background" args={["#05070d"]} />
-          <fog attach="fog" args={["#05070d", 14, 130]} />
+          <fog attach="fog" args={["#05070d", 14, 140]} />
 
-          <ambientLight intensity={0.35} />
-          <directionalLight position={[5, 8, 4]} intensity={1.2} color="#cdd6ff" />
+          <ambientLight intensity={0.3} />
+          <directionalLight position={[6, 10, 4]} intensity={1.1} color="#cdd6ff" />
 
           <Rig />
+          <Atmosphere />
+
+          <CityScene />
           <PlaceholderZones />
+          <CurrentScene />
+
+          <Effects />
         </Canvas>
       </div>
       <ScrollDebug />

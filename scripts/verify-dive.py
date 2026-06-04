@@ -59,11 +59,14 @@ with sync_playwright() as p:
         await sleep(800); stop = true;
         const c = document.querySelector('.experience-root canvas');
         const gl = c && (c.getContext('webgl2') || c.getContext('webgl'));
+        const info = (window.__gl && window.__gl.info) ? window.__gl.info.render : null;
         return {
             vis: document.visibilityState,
             fps: Math.round(f / ((performance.now() - t0) / 1000)),
             canvas: c ? { w: c.width, h: c.height } : null,
             renderer: gl ? gl.getParameter(gl.RENDERER) : null,
+            drawCalls: info ? info.calls : null,
+            triangles: info ? info.triangles : null,
             hasLenis: !!window.__lenis, hasCamera: !!window.__camera, hasStore: !!window.__experience
         };
     }""")
@@ -80,7 +83,8 @@ with sync_playwright() as p:
             page.wait_for_timeout(1100)  # let the rig's critical-damping settle
             s = page.evaluate("""() => {
                 const cam = window.__camera; const st = window.__experience.getState();
-                return { progress: +st.progress.toFixed(3), dim: st.dimension,
+                const info = (window.__gl && window.__gl.info) ? window.__gl.info.render : null;
+                return { progress: +st.progress.toFixed(3), dim: st.dimension, calls: info ? info.calls : null,
                          camX: +cam.position.x.toFixed(2), camY: +cam.position.y.toFixed(2), camZ: +cam.position.z.toFixed(2) };
             }""")
             s["target"] = target
