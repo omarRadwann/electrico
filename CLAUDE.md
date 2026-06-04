@@ -74,6 +74,10 @@ structure · 4 Smart Living Room — smart systems · 5 In-wall Wiring — elect
 - [ ] M5 — Postprocessing & kinetic typography (SplitText).
 - [ ] M6 — Sound + diegetic HUD + content/CTA + skip-to-contact (invoke
   frontend-design skill for the HUD/overlay layer here).
+  NOTE: reconcile the dimension index (`floor(progress*6)`, 6 zones) with the HTML
+  section count (currently 9) — they drift ~1 label out of sync between sample points.
+  Align section→dimension mapping (or pick a deliberate label lead) when the HUD lands;
+  don't inherit the debug readout's approximation.
 - [ ] M7 — Quality tiers, mobile/low-tier path, prefers-reduced-motion,
   context-loss/battery fallback, keyboard a11y.
 - [ ] M8 — Lighthouse/SEO/OG, analytics, deploy.
