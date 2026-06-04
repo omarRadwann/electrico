@@ -26,7 +26,10 @@ const DEVICE = new THREE.MeshStandardMaterial({
   color: "#08302f", emissive: "#43d0c4", emissiveIntensity: 1.6, toneMapped: false, roughness: 0.4,
 });
 
-const LAMP_X = A.x + 6.5;
+// Lamp sits ON the framed furniture cluster (the camera's Room arrival key looks
+// at ≈(-2,-5,-139)) so its glow + cast shadow land on the sofa/table, not on the
+// empty floor to frame-right where it used to be (was A.x + 6.5).
+const LAMP_X = A.x + 3;
 const LAMP_Z = A.z - 3;
 
 useGLTF.preload("/models/sofa/Sofa_01_1k.gltf");

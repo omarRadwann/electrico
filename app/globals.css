@@ -125,6 +125,14 @@ a {
   max-width: 24ch;
 }
 
+/* The six dive beats stay crawlable + provide scroll height, but their text is
+   visually silent — the on-screen line is the camera-synced <Narrative/> overlay
+   (kept in flow with opacity:0, NOT display:none, so it remains in the DOM). */
+.content-section--beat .eyebrow,
+.content-section--beat .narrative {
+  opacity: 0;
+}
+
 .content-section h2 {
   font-size: clamp(2rem, 6vw, 4rem);
   font-weight: 500;
@@ -397,6 +405,41 @@ a {
 }
 
 /* ----------------------------------------------------------------------------
+   Editorial narrative line — driven by the active dimension (same store value
+   as the HUD), so the on-screen sentence always matches the framed scene. Sits
+   in the open left-centre band, clear of the wordmark, gauge and layer title.
+---------------------------------------------------------------------------- */
+.narrative-hud {
+  position: fixed;
+  left: clamp(1.5rem, 6vw, 8rem);
+  top: 41%;
+  transform: translateY(-50%);
+  z-index: 25;
+  max-width: 22ch;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+.narrative-hud[data-show="1"] {
+  opacity: 1;
+}
+.narrative-hud-line {
+  padding-left: 0.95rem;
+  border-left: 2px solid var(--ac, var(--amber));
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 4.2vw, 2.9rem);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.06;
+  color: var(--fg);
+  animation: nhud-in 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes nhud-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ----------------------------------------------------------------------------
    Reduced-motion safety net (spec §3.5). Full reduced-motion path is built in
    M7; this at least disables the CTA transition for users who opt out.
 ---------------------------------------------------------------------------- */
@@ -494,6 +537,7 @@ a {
   .hud-sound.is-on .hud-eq i,
   .hud-layer,
   .hud-layer-rule,
+  .narrative-hud-line,
   .scroll-cue-arrow {
     animation: none;
   }

@@ -3,16 +3,18 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useExperience } from "@/src/store/useExperience";
 import { clamp } from "@/src/lib/math";
-import { CAMERA_PATH, ZONES, ZONE_PROGRESS, boundaryPulse } from "./cameraPath";
+import { sampleCamera, ZONE_PROGRESS, boundaryPulse } from "./cameraPath";
 
 // Reusable temporaries — never allocate inside useFrame (spec §10 perf discipline).
 const _pos = new THREE.Vector3();
-const _tan = new THREE.Vector3();
 const _look = new THREE.Vector3();
 
 /**
  * The single camera (spec §3.1). It does not jump between sections — scroll
- * scrubs it continuously along one authored path. We read the smoothed scroll
+ * scrubs it continuously through one AUTHORED set of keyframes. Both its position
+ * and its look-at target are hand-authored per progress (see cameraPath.ts) and
+ * sampled with cubic-Hermite, so each dimension is framed deliberately instead of
+ * the camera swinging to follow a curve's tangent. We read the smoothed scroll
  * `progress` from the store via getState() (never a hook subscription) so the
  * render loop triggers zero React re-renders.
  */
@@ -53,35 +55,29 @@ export function Rig() {
     }
     const p = clamp(damped.current, 0, 1);
 
-    CAMERA_PATH.getPointAt(p, _pos);
-    CAMERA_PATH.getTangentAt(p, _tan); // defined at p=1 — avoids lookAt-self.
+    // Authored position + look-at target for this progress (no tangent swing).
+    sampleCamera(p, _pos, _look);
 
-    // Mouse parallax: the view leans toward the cursor (damped) for responsive,
-    // hand-held life in every dimension. `pointer` is R3F-normalized (-1..1).
+    // Mouse parallax: a SUBTLE positional lean toward the cursor (damped) for
+    // hand-held life. Position-only — the authored look target is NOT offset, so
+    // the gaze never swings off the framed subject. `pointer` is R3F −1..1.
     pMouse.current.x = THREE.MathUtils.damp(pMouse.current.x, state.pointer.x, 3, dt);
     pMouse.current.y = THREE.MathUtils.damp(pMouse.current.y, state.pointer.y, 3, dt);
 
     camera.position.set(
-      _pos.x + pMouse.current.x * 0.6,
-      _pos.y + pMouse.current.y * 0.45,
+      _pos.x + pMouse.current.x * 0.25,
+      _pos.y + pMouse.current.y * 0.15,
       _pos.z,
     );
-    _look.copy(_pos).add(_tan);
-    _look.x += pMouse.current.x * 3;
-    _look.y += pMouse.current.y * 2;
-    // Tilt the gaze down through the Room so its floor-level furniture is framed
-    // (the dive otherwise flies over it). Gaussian peak at the Room, neutral elsewhere.
-    const roomD = (p - ZONE_PROGRESS[3]) / 0.12;
-    _look.y -= Math.exp(-roomD * roomD) * 1.2;
     camera.lookAt(_look);
 
-    // Active dimension = the zone the camera is physically nearest (by depth).
-    // Robust against the path's non-linear arc-length: floor(p*N) drifts a zone
-    // ahead of the camera in the back half. Low-frequency: only write on change.
+    // Active dimension = the arrival key the scroll is nearest (in progress).
+    // progress-based now that position is authored (the start key sits at z≈6,
+    // only incidentally near the City's depth). Low-frequency: write on change.
     let dim = 0;
     let best = Infinity;
-    for (let i = 0; i < ZONES.length; i++) {
-      const d = Math.abs(_pos.z - ZONES[i].position.z);
+    for (let i = 0; i < ZONE_PROGRESS.length; i++) {
+      const d = Math.abs(p - ZONE_PROGRESS[i]);
       if (d < best) {
         best = d;
         dim = i;

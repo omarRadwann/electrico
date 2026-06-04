@@ -24,27 +24,31 @@ export default function Home() {
           </p>
         </section>
 
-        <section className="content-section">
+        {/* The six dive beats stay in the DOM as crawlable content + the scroll
+            height the dive scrubs against, but their text is visually quiet
+            (.content-section--beat) — the on-screen line is the camera-synced
+            <Narrative/> overlay, so it can't drift out of sync with the HUD. */}
+        <section className="content-section content-section--beat">
           <p className="eyebrow">01 — The City</p>
           <p className="narrative">We keep the city alive.</p>
         </section>
-        <section className="content-section">
+        <section className="content-section content-section--beat">
           <p className="eyebrow">02 — The Building</p>
           <p className="narrative">We raise the structures behind it.</p>
         </section>
-        <section className="content-section">
+        <section className="content-section content-section--beat">
           <p className="eyebrow">03 — The Frame</p>
           <p className="narrative">Bones engineered to last.</p>
         </section>
-        <section className="content-section">
+        <section className="content-section content-section--beat">
           <p className="eyebrow">04 — The Room</p>
           <p className="narrative">We make it think.</p>
         </section>
-        <section className="content-section">
+        <section className="content-section content-section--beat">
           <p className="eyebrow">05 — The Wiring</p>
           <p className="narrative">We install and maintain the nerves.</p>
         </section>
-        <section className="content-section">
+        <section className="content-section content-section--beat">
           <p className="eyebrow">06 — The Current</p>
           <p className="narrative">Energy, endlessly.</p>
         </section>

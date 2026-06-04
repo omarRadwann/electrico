@@ -73,9 +73,26 @@ with sync_playwright() as p:
     print("HEALTH:", json.dumps(health, indent=2))
     print("ERRORS:", json.dumps(errors[:20], indent=2))
 
+    # Sample at the authored keyframe progresses (start, the 6 park'd arrivals,
+    # end) — where sampleCamera() returns the keyframe verbatim, so the live camera
+    # must match the authored framing exactly. The NEW invariant is ORIENTATION:
+    # the camera's world-direction must point along (lookAt - position).
+    import math
+
+    def norm(a):
+        m = math.sqrt(sum(c * c for c in a)) or 1.0
+        return [c / m for c in a]
+
+    def dist(a, b):
+        return math.sqrt(sum((a[i] - b[i]) ** 2 for i in range(3)))
+
+    POS_TOL = 0.6   # parallax is 0 at pointer-center; allow tiny damping residual
+    DIR_DOT = 0.99  # cos angle between actual + authored forward
+
     samples = []
-    if health.get("hasLenis") and health.get("hasCamera"):
-        for target in [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]:
+    fails = []
+    if health.get("hasLenis") and health.get("hasCamera") and health.get("hasStore"):
+        for target in [0.0, 0.13, 0.29, 0.45, 0.61, 0.77, 0.93, 1.0]:
             page.evaluate(
                 "(t) => { const l = window.__lenis; l.scrollTo(t * l.limit, { immediate: true }); }",
                 target,
@@ -84,13 +101,42 @@ with sync_playwright() as p:
             s = page.evaluate("""() => {
                 const cam = window.__camera; const st = window.__experience.getState();
                 const info = (window.__gl && window.__gl.info) ? window.__gl.info.render : null;
-                return { progress: +st.progress.toFixed(3), dim: st.dimension, calls: info ? info.calls : null,
-                         camX: +cam.position.x.toFixed(2), camY: +cam.position.y.toFixed(2), camZ: +cam.position.z.toFixed(2) };
+                const dir = cam.position.clone(); cam.getWorldDirection(dir); // writes + returns unit dir
+                const authored = window.__sampleCamera ? window.__sampleCamera(st.progress) : null;
+                return {
+                    progress: +st.progress.toFixed(4), dim: st.dimension,
+                    calls: info ? info.calls : null,
+                    camPos: [cam.position.x, cam.position.y, cam.position.z],
+                    camDir: [dir.x, dir.y, dir.z],
+                    authPos: authored ? [authored.pos.x, authored.pos.y, authored.pos.z] : null,
+                    authLook: authored ? [authored.look.x, authored.look.y, authored.look.z] : null,
+                };
             }""")
+            ok = True
+            note = ""
+            if s["authPos"] and s["authLook"]:
+                pos_err = dist(s["camPos"], s["authPos"])
+                exp_dir = norm([s["authLook"][i] - s["authPos"][i] for i in range(3)])
+                dir_dot = sum(s["camDir"][i] * exp_dir[i] for i in range(3))
+                s["posErr"] = round(pos_err, 3)
+                s["dirDot"] = round(dir_dot, 4)
+                ok = pos_err <= POS_TOL and dir_dot >= DIR_DOT
+                if not ok:
+                    note = f"posErr={pos_err:.2f}(<= {POS_TOL}) dirDot={dir_dot:.3f}(>= {DIR_DOT})"
+                    fails.append({"target": target, **{k: s[k] for k in ("posErr", "dirDot")}, "note": note})
             s["target"] = target
+            s["framingOK"] = ok
+            # trim raw arrays for readable logging
+            for k in ("camPos", "camDir", "authPos", "authLook"):
+                if s.get(k):
+                    s[k] = [round(c, 2) for c in s[k]]
             samples.append(s)
             page.screenshot(path=os.path.join(OUT, f"verify-{int(target * 100):03d}.png"))
         print("SAMPLES:", json.dumps(samples, indent=2))
+        if fails:
+            print(f"FRAMING FAILURES ({len(fails)}):", json.dumps(fails, indent=2))
+        else:
+            print("FRAMING: all", len(samples), "keyframes matched (position + orientation). PASS")
     else:
         print(
             "SKIPPED samples - dev hooks not present. If ERRORS shows a 500 / "

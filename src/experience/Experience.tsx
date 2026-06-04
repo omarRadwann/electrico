@@ -6,6 +6,7 @@ import { Environment } from "@react-three/drei";
 import { createRenderer } from "@/src/three/createRenderer";
 import { useSmoothScroll } from "@/src/hooks/useSmoothScroll";
 import { Hud } from "@/src/ui/Hud";
+import { Narrative } from "@/src/ui/Narrative";
 import { Loader } from "@/src/ui/Loader";
 import { LoopVeil } from "@/src/ui/LoopVeil";
 import { Rig } from "./Rig";
@@ -77,6 +78,7 @@ export function Experience() {
       </div>
       <LoopVeil />
       <Hud />
+      <Narrative />
       <Loader />
     </>
   );
