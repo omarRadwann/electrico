@@ -12,11 +12,14 @@ import { ZONES } from "../cameraPath";
  */
 
 const A = ZONES[2].position; // (2.5, 2, -102)
-const MAX_BEAMS = 64;
+const MAX_BEAMS = 160;
 const S = 6; // half-span between columns
 const H = 30;
 const LEVELS = 5;
 const TH = 0.16; // member thickness
+// Two connected bays along −Z (the camera's forward look) so the fly-through is a
+// real tunnel of steel receding ahead, not a single sparse cube.
+const BAY_Z = [A.z, A.z - 2 * S]; // -102, -114  → continuous z −96..−120
 
 // Module-scope temporaries — reused while laying out beams (one scene, sequential).
 const _a = new THREE.Vector3();
@@ -57,31 +60,44 @@ export function FrameScene() {
 
     const yBot = A.y - H / 2;
     const yTop = A.y + H / 2;
-    const cx = [A.x - S, A.x + S, A.x + S, A.x - S];
-    const cz = [A.z - S, A.z - S, A.z + S, A.z + S];
 
-    // Columns.
-    for (let k = 0; k < 4; k++) setBeam(cx[k], yBot, cz[k], cx[k], yTop, cz[k], 0.22);
+    // One braced cube-bay centred at depth `zc`. Two of these chained along −Z
+    // give the fly-through its tunnel of receding structure.
+    const buildCage = (zc: number) => {
+      const cx = [A.x - S, A.x + S, A.x + S, A.x - S];
+      const cz = [zc - S, zc - S, zc + S, zc + S];
 
-    // Perimeter ring beams at each level.
-    for (let l = 0; l < LEVELS; l++) {
-      const y = yBot + (l / (LEVELS - 1)) * H;
-      for (let k = 0; k < 4; k++) {
-        const n = (k + 1) % 4;
-        setBeam(cx[k], y, cz[k], cx[n], y, cz[n], TH);
+      // 4 corner columns.
+      for (let k = 0; k < 4; k++) setBeam(cx[k], yBot, cz[k], cx[k], yTop, cz[k], 0.22);
+
+      // Perimeter ring beams at each level.
+      for (let l = 0; l < LEVELS; l++) {
+        const y = yBot + (l / (LEVELS - 1)) * H;
+        for (let k = 0; k < 4; k++) {
+          const n = (k + 1) % 4;
+          setBeam(cx[k], y, cz[k], cx[n], y, cz[n], TH);
+        }
       }
-    }
 
-    // Zig-zag diagonal cross-bracing on every face — the structural signature.
-    for (let l = 0; l < LEVELS - 1; l++) {
-      const y0 = yBot + (l / (LEVELS - 1)) * H;
-      const y1 = yBot + ((l + 1) / (LEVELS - 1)) * H;
-      for (let k = 0; k < 4; k++) {
-        const n = (k + 1) % 4;
-        if ((l + k) % 2 === 0) setBeam(cx[k], y0, cz[k], cx[n], y1, cz[n], TH);
-        else setBeam(cx[n], y0, cz[n], cx[k], y1, cz[k], TH);
+      // Zig-zag diagonal cross-bracing on every side face — the structural signature.
+      for (let l = 0; l < LEVELS - 1; l++) {
+        const y0 = yBot + (l / (LEVELS - 1)) * H;
+        const y1 = yBot + ((l + 1) / (LEVELS - 1)) * H;
+        for (let k = 0; k < 4; k++) {
+          const n = (k + 1) % 4;
+          if ((l + k) % 2 === 0) setBeam(cx[k], y0, cz[k], cx[n], y1, cz[n], TH);
+          else setBeam(cx[n], y0, cz[n], cx[k], y1, cz[k], TH);
+        }
       }
-    }
+
+      // X-braces across the floor and ceiling planes — reads as a complete truss.
+      for (const y of [yBot, yTop]) {
+        setBeam(cx[0], y, cz[0], cx[2], y, cz[2], TH);
+        setBeam(cx[1], y, cz[1], cx[3], y, cz[3], TH);
+      }
+    };
+
+    for (const zc of BAY_Z) buildCage(zc);
 
     mesh.count = i;
     mesh.instanceMatrix.needsUpdate = true;
