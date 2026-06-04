@@ -12,9 +12,13 @@ import { clamp } from "@/src/lib/math";
  */
 
 const NIGHT = new THREE.Color("#05070d");
-// Each zone's fog tint = its category colour pulled most of the way to night,
-// so the world stays dark but takes on the dimension's mood.
-const FOG_TINTS = ZONES.map((z) => new THREE.Color(z.color).lerp(NIGHT, 0.8));
+// Each zone's fog tint = its category colour pulled most of the way to night.
+// The Room (dim 3) is special-cased to a DARK WARM interior rather than its teal
+// category colour — the teal is the smart-device ACCENT (§7), not a full-frame
+// wash, so the warm-lit furniture actually reads instead of drowning in teal.
+const FOG_TINTS = ZONES.map((z, i) =>
+  i === 3 ? new THREE.Color("#161009") : new THREE.Color(z.color).lerp(NIGHT, 0.8),
+);
 
 const _fog = new THREE.Color();
 const _bg = new THREE.Color();

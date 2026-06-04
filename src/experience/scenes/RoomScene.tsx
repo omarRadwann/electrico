@@ -71,6 +71,9 @@ export function RoomScene() {
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.003}
       />
+      {/* Warm fill over the furniture cluster so the real models read clearly
+          against the dark interior (no shadow — just lift). */}
+      <pointLight position={[A.x - 2, FLOOR_Y + 6, A.z + 1]} intensity={45} distance={24} color="#ffe2b4" />
 
       {/* Shell: floor + back wall + side wall (a corner) — all catch shadow. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[A.x, FLOOR_Y, A.z]} receiveShadow>
