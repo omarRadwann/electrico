@@ -400,6 +400,92 @@ a {
    Reduced-motion safety net (spec §3.5). Full reduced-motion path is built in
    M7; this at least disables the CTA transition for users who opt out.
 ---------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------
+   Loader / title screen — the "powering on" moment (spec §3.4).
+---------------------------------------------------------------------------- */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg-night);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.7rem;
+  opacity: 1;
+  transition: opacity 0.9s ease;
+}
+.loader.is-done {
+  opacity: 0;
+  pointer-events: none;
+}
+.loader-mark {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 8vw, 5rem);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+.loader-bar {
+  width: min(240px, 52vw);
+  height: 1px;
+  background: rgba(243, 237, 226, 0.15);
+  overflow: hidden;
+}
+.loader-bar span {
+  display: block;
+  height: 100%;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber);
+  transition: width 0.3s ease;
+}
+.loader-pct {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+
+.scroll-cue {
+  position: fixed;
+  bottom: clamp(1.4rem, 5vw, 3rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 35;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  pointer-events: none;
+  animation: cue-in 1.2s ease both;
+}
+.scroll-cue-arrow {
+  width: 1px;
+  height: 24px;
+  background: linear-gradient(var(--amber), transparent);
+  animation: cue-bounce 1.8s ease-in-out infinite;
+}
+@keyframes cue-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes cue-bounce {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(7px); opacity: 0.35; }
+}
+
+/* ----------------------------------------------------------------------------
+   Reduced-motion safety net (spec §3.5). Full reduced-motion path is built in
+   M7; this disables decorative loops for users who opt out.
+---------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   .cta {
     transition: none;
@@ -407,7 +493,8 @@ a {
   .hud-dot,
   .hud-sound.is-on .hud-eq i,
   .hud-layer,
-  .hud-layer-rule {
+  .hud-layer-rule,
+  .scroll-cue-arrow {
     animation: none;
   }
 }
