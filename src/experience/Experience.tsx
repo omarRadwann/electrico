@@ -7,6 +7,7 @@ import { createRenderer } from "@/src/three/createRenderer";
 import { useSmoothScroll } from "@/src/hooks/useSmoothScroll";
 import { Hud } from "@/src/ui/Hud";
 import { Narrative } from "@/src/ui/Narrative";
+import { AmbientAudio } from "@/src/ui/AmbientAudio";
 import { Loader } from "@/src/ui/Loader";
 import { LoopVeil } from "@/src/ui/LoopVeil";
 import { Rig } from "./Rig";
@@ -79,6 +80,7 @@ export function Experience() {
       <LoopVeil />
       <Hud />
       <Narrative />
+      <AmbientAudio />
       <Loader />
     </>
   );

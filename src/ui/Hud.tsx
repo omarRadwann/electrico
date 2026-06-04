@@ -3,6 +3,7 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 import { useExperience } from "@/src/store/useExperience";
 import { ZONES, ZONE_PROGRESS } from "@/src/experience/cameraPath";
+import { ensureStarted } from "@/src/audio/ambientEngine";
 
 /**
  * Diegetic HUD — "descent telemetry". Reads like the dive's own instrumentation,
@@ -28,7 +29,13 @@ function SoundToggle() {
     <button
       type="button"
       className={`hud-sound${audioOn ? " is-on" : ""}`}
-      onClick={() => setAudioOn(!audioOn)}
+      onClick={() => {
+        // This click is the autoplay gesture — create/resume the AudioContext
+        // here (in the gesture call stack), then flip the store; <AmbientAudio/>
+        // ramps the gain in response.
+        ensureStarted();
+        setAudioOn(!audioOn);
+      }}
       aria-pressed={audioOn}
     >
       <span className="hud-eq" aria-hidden="true">
