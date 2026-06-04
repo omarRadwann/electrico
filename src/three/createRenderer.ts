@@ -30,6 +30,10 @@ export function createRenderer(
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  // Soft shadow maps, used selectively (only the Room's lamp casts) for grounded
+  // realism without the cost of shadowing all six dimensions.
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   return renderer;
 }

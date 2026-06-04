@@ -1,4 +1,5 @@
 import { useFrame } from "@react-three/fiber";
+import { MeshReflectorMaterial } from "@react-three/drei";
 import { useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
 import { ZONES } from "../cameraPath";
@@ -114,10 +115,21 @@ export function CityScene() {
 
   return (
     <group>
-      {/* Ground that grounds the skyline and catches a little fog. */}
+      {/* Wet-street reflective ground — the window lights + tower silhouettes
+          reflect in it. resolution capped at 512 (cost scales hard with it). */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[CITY.x, GROUND_Y, CITY.z]}>
         <planeGeometry args={[260, 260]} />
-        <meshStandardMaterial color="#06080f" roughness={0.9} metalness={0.1} />
+        <MeshReflectorMaterial
+          resolution={256}
+          mirror={0}
+          blur={[300, 300]}
+          mixBlur={2.5}
+          mixStrength={0.55}
+          roughness={0.85}
+          depthScale={0}
+          color="#070912"
+          metalness={0.25}
+        />
       </mesh>
 
       {/* Dark tower masses. */}
