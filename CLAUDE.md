@@ -95,6 +95,13 @@ structure · 4 Smart Living Room — smart systems · 5 In-wall Wiring — elect
   City wet-street reflective ground (MeshReflectorMaterial @res 256 for headroom). 93fps.
   DOF intentionally skipped (wrong for a scroll camera); N8AO dropped (perf). PENDING:
   SplitText kinetic typography choreographed to the camera.
+  REALISM PASS 2 (scenes were called "poor"): de-washed (tighter bloom, less fog, clear
+  glass) for crispness; self-hosted Poly Haven night HDRI (`public/hdri/`); greebled City
+  skyline; reflection res→128. STILL BOX-ISH (next geometry pass): Room/Building/Frame/Wiring
+  — detail procedurally or source CC0 GLB models. NO Blender installed (bpy wouldn't beat the
+  procedural code; the real geometry jump needs sourced/commissioned models per §13). PERF:
+  the reflective ground is the first M7 quality-tier toggle; late-session fps readings are
+  throttle-unreliable (architecture is lean — ~30 draws, fully instanced).
 - [ ] M6 — Sound + diegetic HUD + content/CTA + skip-to-contact (invoke
   frontend-design skill for the HUD/overlay layer here).
   NOTE: the active-dimension index is now correct (Rig uses nearest-zone-by-depth, not
