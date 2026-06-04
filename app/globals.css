@@ -171,6 +171,19 @@ a {
 }
 
 /* ----------------------------------------------------------------------------
+   Endless-loop seam veil — masks the Current->City scroll/content snap.
+---------------------------------------------------------------------------- */
+.loop-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, #1a1206 0%, #05070d 70%);
+  will-change: opacity;
+}
+
+/* ----------------------------------------------------------------------------
    TEMPORARY M0 debug readout (removed when the diegetic HUD lands in M6).
 ---------------------------------------------------------------------------- */
 .scroll-debug {

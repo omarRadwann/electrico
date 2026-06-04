@@ -5,6 +5,7 @@ import { Environment } from "@react-three/drei";
 import { createRenderer } from "@/src/three/createRenderer";
 import { useSmoothScroll } from "@/src/hooks/useSmoothScroll";
 import { ScrollDebug } from "@/src/ui/ScrollDebug";
+import { LoopVeil } from "@/src/ui/LoopVeil";
 import { Rig } from "./Rig";
 import { Atmosphere } from "./Atmosphere";
 import { AmbientDebris } from "./AmbientDebris";
@@ -65,6 +66,7 @@ export function Experience() {
           <Effects />
         </Canvas>
       </div>
+      <LoopVeil />
       <ScrollDebug />
     </>
   );

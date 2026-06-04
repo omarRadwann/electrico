@@ -18,7 +18,10 @@ export function useSmoothScroll(): void {
   const setScroll = useExperience((s) => s.setScroll);
 
   useEffect(() => {
-    const lenis = new Lenis({ autoRaf: true });
+    // `infinite` makes scroll wrap at the ends → the dive is endless (spec §3.2
+    // loop). Progress wraps 1↔0; the Rig snaps across the seam and the LoopVeil
+    // masks the content snap.
+    const lenis = new Lenis({ autoRaf: true, infinite: true });
 
     // Dev-only: expose the Lenis instance so a real browser can drive scroll
     // deterministically (lenis.scrollTo) during verification. Stripped in prod.

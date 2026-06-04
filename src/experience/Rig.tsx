@@ -38,12 +38,19 @@ export function Rig() {
   useFrame((state, dt) => {
     const target = useExperience.getState().progress;
 
-    // Critical-damping on top of Lenis' inertia gives the camera *weight*: it
-    // "falls forward" with momentum instead of tracking the scrollbar 1:1.
-    // Boundary kick: briefly raise the damping lambda (not the z position) so
-    // crossings feel like *passing through*, not gliding (spec §3.2).
-    const kick = boundaryPulse(target).pulse;
-    damped.current = THREE.MathUtils.damp(damped.current, target, 3.5 + kick * 6, dt);
+    // Endless-loop wrap: when progress jumps across the seam (e.g. ~1 -> ~0),
+    // SNAP instead of damping — damping would reverse-fly the whole dive. The
+    // LoopVeil masks the snap so it reads as a seamless loop (spec §3.2).
+    if (Math.abs(target - damped.current) > 0.5) {
+      damped.current = target;
+    } else {
+      // Critical-damping on top of Lenis' inertia gives the camera *weight*: it
+      // "falls forward" with momentum instead of tracking the scrollbar 1:1.
+      // Boundary kick: briefly raise the damping lambda (not the z position) so
+      // crossings feel like *passing through*, not gliding (spec §3.2).
+      const kick = boundaryPulse(target).pulse;
+      damped.current = THREE.MathUtils.damp(damped.current, target, 3.5 + kick * 6, dt);
+    }
     const p = clamp(damped.current, 0, 1);
 
     CAMERA_PATH.getPointAt(p, _pos);
