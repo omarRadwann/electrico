@@ -18,6 +18,7 @@ const COLS = 12;
 const ROWS = 16;
 const WIN = COLS * ROWS;
 const WIN_COLOR = new THREE.Color("#ffc46b");
+const COOL_WIN = new THREE.Color("#bcd2ff"); // ~15% of windows read cooler — real skylines aren't one colour
 
 export function BuildingScene() {
   const winRef = useRef<THREE.InstancedMesh>(null);
@@ -38,7 +39,7 @@ export function BuildingScene() {
         dummy.updateMatrix();
         w.setMatrixAt(i, dummy.matrix);
         const brightness = Math.random() < 0.22 ? 0.0 : 0.45 + Math.random() * 1.2;
-        color.copy(WIN_COLOR).multiplyScalar(brightness);
+        color.copy(Math.random() < 0.15 ? COOL_WIN : WIN_COLOR).multiplyScalar(brightness);
         w.setColorAt(i, color);
         i++;
       }

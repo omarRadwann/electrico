@@ -15,8 +15,9 @@ const FLOOR_Y = A.y - 3;
 const WOOD = new THREE.MeshStandardMaterial({ color: "#241a12", roughness: 0.85, metalness: 0.08 });
 const WALL = new THREE.MeshStandardMaterial({ color: "#211913", roughness: 0.92, metalness: 0.04 });
 const FABRIC = new THREE.MeshStandardMaterial({ color: "#2c2218", roughness: 0.95, metalness: 0.02 });
+const RUG = new THREE.MeshStandardMaterial({ color: "#2e2016", roughness: 0.97, metalness: 0.02 });
 const LAMP = new THREE.MeshStandardMaterial({
-  color: "#3a2c18", emissive: "#ffcf95", emissiveIntensity: 3, toneMapped: false,
+  color: "#3a2c18", emissive: "#ffcf95", emissiveIntensity: 1.8, toneMapped: false,
 });
 const DEVICE = new THREE.MeshStandardMaterial({
   color: "#08302f", emissive: "#43d0c4", emissiveIntensity: 1.6, toneMapped: false, roughness: 0.4,
@@ -64,6 +65,16 @@ export function RoomScene() {
       </mesh>
       <mesh position={[A.x - 4, FLOOR_Y + 0.4, A.z - 0.6]} material={WOOD}>
         <boxGeometry args={[2.4, 0.5, 1.1]} />
+      </mesh>
+      {/* Bookshelf + rug + side table — silhouettes that give the room volume. */}
+      <mesh position={[A.x + 7, FLOOR_Y + 3, A.z - 13]} material={WOOD}>
+        <boxGeometry args={[3.2, 6, 0.6]} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[A.x - 4, FLOOR_Y + 0.03, A.z + 1]} material={RUG}>
+        <planeGeometry args={[7.5, 5.5]} />
+      </mesh>
+      <mesh position={[A.x + 3.5, FLOOR_Y + 0.55, A.z + 3.5]} material={WOOD}>
+        <boxGeometry args={[1, 1.1, 1]} />
       </mesh>
 
       {/* Smart devices (teal): a wall panel + a speaker on the table + a sensor. */}

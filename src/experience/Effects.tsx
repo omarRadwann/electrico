@@ -1,4 +1,10 @@
-import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
+import {
+  EffectComposer,
+  Bloom,
+  Vignette,
+  HueSaturation,
+  BrightnessContrast,
+} from "@react-three/postprocessing";
 
 /**
  * Postprocessing stack (spec §5/§6: bloom is essential — the glow is what makes
@@ -13,14 +19,18 @@ import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 export function Effects() {
   return (
     <EffectComposer multisampling={0}>
+      {/* threshold nudged to 0.25 so env-lit (non-emissive) surfaces don't bloom. */}
       <Bloom
-        luminanceThreshold={0.2}
+        luminanceThreshold={0.25}
         luminanceSmoothing={0.08}
         mipmapBlur
-        intensity={1.3}
+        intensity={1.25}
         radius={0.8}
       />
-      <Vignette offset={0.28} darkness={0.7} />
+      {/* Subtle cinematic grade — slight desaturate + a touch of contrast. */}
+      <HueSaturation saturation={-0.08} />
+      <BrightnessContrast brightness={0} contrast={0.06} />
+      <Vignette offset={0.3} darkness={0.72} />
     </EffectComposer>
   );
 }

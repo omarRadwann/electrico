@@ -89,7 +89,8 @@ export function FrameScene() {
 
   useFrame((s) => {
     if (matRef.current) {
-      matRef.current.emissiveIntensity = 0.22 + 0.18 * Math.sin(s.clock.elapsedTime * 1.4);
+      // Mostly reflective steel (env IBL does the work); only a faint pulse.
+      matRef.current.emissiveIntensity = 0.05 + 0.05 * Math.sin(s.clock.elapsedTime * 1.4);
     }
   });
 
@@ -100,9 +101,9 @@ export function FrameScene() {
         ref={matRef}
         color="#586273"
         emissive="#37496e"
-        emissiveIntensity={0.28}
-        roughness={0.3}
-        metalness={0.92}
+        emissiveIntensity={0.05}
+        roughness={0.28}
+        metalness={0.94}
       />
     </instancedMesh>
   );

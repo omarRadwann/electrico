@@ -1,6 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
+import { Environment } from "@react-three/drei";
 import { createRenderer } from "@/src/three/createRenderer";
 import { useSmoothScroll } from "@/src/hooks/useSmoothScroll";
 import { ScrollDebug } from "@/src/ui/ScrollDebug";
@@ -42,6 +43,10 @@ export function Experience() {
 
           <ambientLight intensity={0.3} />
           <directionalLight position={[6, 10, 4]} intensity={1.1} color="#cdd6ff" />
+          {/* Low-intensity night IBL: adds specular sheen/reflections to steel,
+              copper and glass without lifting the dark mood. background:false so
+              Atmosphere keeps the backdrop. (Self-host the HDRI at M8.) */}
+          <Environment preset="night" environmentIntensity={0.12} background={false} />
 
           <Rig />
           <Atmosphere />
