@@ -89,8 +89,9 @@ export function FrameScene() {
 
   useFrame((s) => {
     if (matRef.current) {
-      // Mostly reflective steel (env IBL does the work); only a faint pulse.
-      matRef.current.emissiveIntensity = 0.05 + 0.05 * Math.sin(s.clock.elapsedTime * 1.4);
+      // Glowing cool x-ray skeleton (spec §7: the hidden order / blueprint). The
+      // beams read clearly against the dark and pulse as if under load.
+      matRef.current.emissiveIntensity = 0.55 + 0.3 * Math.sin(s.clock.elapsedTime * 1.4);
     }
   });
 
@@ -100,10 +101,11 @@ export function FrameScene() {
       <meshStandardMaterial
         ref={matRef}
         color="#586273"
-        emissive="#37496e"
-        emissiveIntensity={0.05}
-        roughness={0.28}
-        metalness={0.94}
+        emissive="#4d74c8"
+        emissiveIntensity={0.7}
+        toneMapped={false}
+        roughness={0.3}
+        metalness={0.9}
       />
     </instancedMesh>
   );
