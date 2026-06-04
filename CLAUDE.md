@@ -88,8 +88,13 @@ structure · 4 Smart Living Room — smart systems · 5 In-wall Wiring — elect
   copper conduits, surging), Current (additive energy-flow shader). Each has its one-verb
   animation. PENDING: the tactile interaction per dimension (§7), richer detailing, and
   optional compressed GLB assets (scenes are procedural/texture-free for now).
-- [ ] M5 — Postprocessing & kinetic typography. (Bloom + vignette DONE via `Effects.tsx`,
-  GPU-verified; DOF, per-layer colour-grade tuning, and SplitText kinetic type pending.)
+- [~] M5 — Postprocessing & realism. DONE: bloom + vignette + cinematic grade
+  (HueSat/BrightnessContrast) + SMAA (`Effects.tsx`); plus a REALISM pass — night IBL
+  reflections, recessed City window geometry (reads as a real skyline), Building glass
+  curtain (transmission), selective Room lamp shadows (PCFSoft, only the Room casts), and a
+  City wet-street reflective ground (MeshReflectorMaterial @res 256 for headroom). 93fps.
+  DOF intentionally skipped (wrong for a scroll camera); N8AO dropped (perf). PENDING:
+  SplitText kinetic typography choreographed to the camera.
 - [ ] M6 — Sound + diegetic HUD + content/CTA + skip-to-contact (invoke
   frontend-design skill for the HUD/overlay layer here).
   NOTE: the active-dimension index is now correct (Rig uses nearest-zone-by-depth, not
