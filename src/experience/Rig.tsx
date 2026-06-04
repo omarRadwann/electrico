@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useExperience } from "@/src/store/useExperience";
 import { clamp } from "@/src/lib/math";
-import { CAMERA_PATH, ZONES } from "./cameraPath";
+import { CAMERA_PATH, ZONES, boundaryPulse } from "./cameraPath";
 
 // Reusable temporaries — never allocate inside useFrame (spec §10 perf discipline).
 const _pos = new THREE.Vector3();
@@ -40,7 +40,10 @@ export function Rig() {
 
     // Critical-damping on top of Lenis' inertia gives the camera *weight*: it
     // "falls forward" with momentum instead of tracking the scrollbar 1:1.
-    damped.current = THREE.MathUtils.damp(damped.current, target, 3.5, dt);
+    // Boundary kick: briefly raise the damping lambda (not the z position) so
+    // crossings feel like *passing through*, not gliding (spec §3.2).
+    const kick = boundaryPulse(target).pulse;
+    damped.current = THREE.MathUtils.damp(damped.current, target, 3.5 + kick * 6, dt);
     const p = clamp(damped.current, 0, 1);
 
     CAMERA_PATH.getPointAt(p, _pos);

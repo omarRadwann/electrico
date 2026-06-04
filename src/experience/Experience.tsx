@@ -14,6 +14,7 @@ import { FrameScene } from "./scenes/FrameScene";
 import { RoomScene } from "./scenes/RoomScene";
 import { WiringScene } from "./scenes/WiringScene";
 import { CurrentScene } from "./scenes/CurrentScene";
+import { Transitions } from "./Transitions";
 import { Effects } from "./Effects";
 
 /**
@@ -60,6 +61,7 @@ export function Experience() {
           <CurrentScene />
 
           <AmbientDebris />
+          <Transitions />
           <Effects />
         </Canvas>
       </div>
