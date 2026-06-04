@@ -25,16 +25,18 @@ export function Effects() {
           already supplies material depth; revisit AO only with a heavy quality
           dial-down or for higher-tier devices (M7). */}
       {/* threshold nudged to 0.25 so env-lit (non-emissive) surfaces don't bloom. */}
+      {/* Tighter, brighter-only bloom — threshold up + radius down so only the
+          true light sources glow instead of the whole frame washing out. */}
       <Bloom
-        luminanceThreshold={0.25}
-        luminanceSmoothing={0.08}
+        luminanceThreshold={0.42}
+        luminanceSmoothing={0.07}
         mipmapBlur
-        intensity={1.25}
-        radius={0.8}
+        intensity={1.0}
+        radius={0.62}
       />
       {/* Subtle cinematic grade — slight desaturate + a touch of contrast. */}
       <HueSaturation saturation={-0.08} />
-      <BrightnessContrast brightness={0} contrast={0.06} />
+      <BrightnessContrast brightness={-0.02} contrast={0.13} />
       {/* Morphological AA — kills the jagged-edge "cheap render" tell. MSAA is
           off (it fights bloom), so SMAA does the edge cleanup as a post pass. */}
       <SMAA />

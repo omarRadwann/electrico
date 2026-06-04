@@ -41,14 +41,18 @@ export function Experience() {
         >
           {/* Single continuous "night" world; Atmosphere shifts these per layer. */}
           <color attach="background" args={["#05070d"]} />
-          <fog attach="fog" args={["#05070d", 14, 140]} />
+          <fog attach="fog" args={["#05070d", 24, 185]} />
 
           <ambientLight intensity={0.3} />
           <directionalLight position={[6, 10, 4]} intensity={1.1} color="#cdd6ff" />
           {/* Low-intensity night IBL: adds specular sheen/reflections to steel,
               copper and glass without lifting the dark mood. background:false so
               Atmosphere keeps the backdrop. (Self-host the HDRI at M8.) */}
-          <Environment preset="night" environmentIntensity={0.12} background={false} />
+          <Environment
+            files="/hdri/dikhololo_night_1k.hdr"
+            environmentIntensity={0.15}
+            background={false}
+          />
 
           <Rig />
           <Atmosphere />

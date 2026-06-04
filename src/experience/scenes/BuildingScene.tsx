@@ -72,14 +72,14 @@ export function BuildingScene() {
       <mesh position={[A.x, A.y, FACADE_Z + 0.5]}>
         <planeGeometry args={[FW + 3, FH + 4]} />
         <meshPhysicalMaterial
-          transmission={0.6}
-          roughness={0.1}
-          thickness={0.5}
+          transmission={0.85}
+          roughness={0.05}
+          thickness={0.2}
           ior={1.45}
           metalness={0}
-          color="#aebed6"
+          color="#c8d4e6"
           transparent
-          opacity={0.85}
+          opacity={0.45}
         />
       </mesh>
     </group>

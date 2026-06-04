@@ -32,7 +32,7 @@ export function Atmosphere() {
     _fog.copy(FOG_TINTS[i]).lerp(FOG_TINTS[next], t);
     if (scene.fog) (scene.fog as THREE.Fog).color.copy(_fog);
     if (scene.background instanceof THREE.Color) {
-      _bg.copy(_fog).multiplyScalar(0.55);
+      _bg.copy(_fog).multiplyScalar(0.4);
       scene.background.copy(_bg);
     }
   });
