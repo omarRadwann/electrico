@@ -53,6 +53,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  scrollbar-width: none; /* the diegetic depth gauge is the scroll indicator */
+}
+body::-webkit-scrollbar {
+  display: none;
 }
 
 a {
@@ -184,23 +188,212 @@ a {
 }
 
 /* ----------------------------------------------------------------------------
-   TEMPORARY M0 debug readout (removed when the diegetic HUD lands in M6).
+   Diegetic HUD — "descent telemetry" (spec §3.3). Reads as the dive's own
+   instrumentation; pointer-events:none except the sound toggle.
 ---------------------------------------------------------------------------- */
-.scroll-debug {
+.hud {
   position: fixed;
-  left: 1rem;
-  bottom: 1rem;
-  z-index: 50;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  color: var(--amber);
-  background: rgba(5, 7, 13, 0.6);
-  border: 1px solid rgba(232, 162, 61, 0.25);
-  padding: 0.4rem 0.6rem;
-  border-radius: 4px;
-  backdrop-filter: blur(6px);
+  inset: 0;
+  z-index: 30;
   pointer-events: none;
+  font-family: var(--font-mono);
+}
+
+.hud-wordmark {
+  position: absolute;
+  top: clamp(1.1rem, 3vw, 2.2rem);
+  left: clamp(1.1rem, 3vw, 2.2rem);
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+.hud-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 10px 2px rgba(232, 162, 61, 0.7);
+  animation: hud-pulse 2.6s ease-in-out infinite;
+}
+@keyframes hud-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.65); }
+}
+
+.hud-sound {
+  position: absolute;
+  top: clamp(1.1rem, 3vw, 2.2rem);
+  right: clamp(1.1rem, 3vw, 2.2rem);
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: rgba(5, 7, 13, 0.35);
+  border: 1px solid rgba(243, 237, 226, 0.16);
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  padding: 0.55rem 0.85rem;
+  border-radius: 2px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+.hud-sound:hover {
+  color: var(--fg);
+  border-color: rgba(232, 162, 61, 0.5);
+}
+.hud-sound.is-on {
+  color: var(--amber);
+  border-color: rgba(232, 162, 61, 0.55);
+}
+.hud-eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 11px;
+}
+.hud-eq i {
+  width: 2px;
+  height: 3px;
+  background: currentColor;
+  opacity: 0.55;
+}
+.hud-sound.is-on .hud-eq i {
+  opacity: 1;
+  animation: hud-eq 0.9s ease-in-out infinite;
+}
+.hud-sound.is-on .hud-eq i:nth-child(2) { animation-delay: 0.12s; }
+.hud-sound.is-on .hud-eq i:nth-child(3) { animation-delay: 0.24s; }
+.hud-sound.is-on .hud-eq i:nth-child(4) { animation-delay: 0.36s; }
+@keyframes hud-eq {
+  0%, 100% { height: 3px; }
+  50% { height: 11px; }
+}
+
+.hud-gauge {
+  position: absolute;
+  right: clamp(1.1rem, 3vw, 2.4rem);
+  top: 50%;
+  transform: translateY(-50%);
+  height: min(46vh, 440px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+}
+.hud-gauge-cap {
+  font-size: 0.56rem;
+  letter-spacing: 0.3em;
+  color: var(--fg-dim);
+}
+.hud-gauge-pct {
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  color: var(--fg);
+}
+.hud-gauge-pct small {
+  color: var(--fg-dim);
+  font-size: 0.7em;
+  margin-left: 1px;
+}
+.hud-gauge-track {
+  position: relative;
+  flex: 1;
+  width: 1px;
+  background: rgba(243, 237, 226, 0.14);
+}
+.hud-gauge-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  background: linear-gradient(to bottom, var(--amber), rgba(232, 162, 61, 0.12));
+}
+.hud-gauge-tick {
+  position: absolute;
+  left: 50%;
+  width: 6px;
+  height: 1px;
+  transform: translate(-50%, -50%);
+  background: rgba(243, 237, 226, 0.35);
+  transition: background 0.4s ease, width 0.4s ease;
+}
+.hud-gauge-tick.is-active {
+  width: 12px;
+  background: var(--tc, var(--amber));
+}
+.hud-gauge-tick-num {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.52rem;
+  letter-spacing: 0.12em;
+  color: var(--fg-dim);
+}
+.hud-gauge-tick.is-active .hud-gauge-tick-num {
+  color: var(--tc, var(--amber));
+}
+.hud-gauge-marker {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--mc, var(--amber));
+  box-shadow: 0 0 14px 3px var(--mc, var(--amber));
+  transition: background 0.5s ease, box-shadow 0.5s ease;
+}
+
+.hud-layer {
+  position: absolute;
+  left: clamp(1.1rem, 3vw, 2.4rem);
+  bottom: clamp(1.4rem, 5vw, 3rem);
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  animation: hud-layer-in 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.hud-layer-num {
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  color: var(--ac, var(--amber));
+}
+.hud-layer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.hud-layer-name {
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 2.6vw, 1.7rem);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+.hud-layer-rule {
+  height: 1px;
+  background: var(--ac, var(--amber));
+  transform-origin: left;
+  animation: hud-rule-in 0.9s 0.15s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes hud-layer-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes hud-rule-in {
+  from { transform: scaleX(0); opacity: 0; }
+  to { transform: scaleX(1); opacity: 0.8; }
 }
 
 /* ----------------------------------------------------------------------------
@@ -210,5 +403,11 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .cta {
     transition: none;
+  }
+  .hud-dot,
+  .hud-sound.is-on .hud-eq i,
+  .hud-layer,
+  .hud-layer-rule {
+    animation: none;
   }
 }

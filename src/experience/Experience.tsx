@@ -5,7 +5,7 @@ import { Canvas } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import { createRenderer } from "@/src/three/createRenderer";
 import { useSmoothScroll } from "@/src/hooks/useSmoothScroll";
-import { ScrollDebug } from "@/src/ui/ScrollDebug";
+import { Hud } from "@/src/ui/Hud";
 import { LoopVeil } from "@/src/ui/LoopVeil";
 import { Rig } from "./Rig";
 import { Atmosphere } from "./Atmosphere";
@@ -75,7 +75,7 @@ export function Experience() {
         </Canvas>
       </div>
       <LoopVeil />
-      <ScrollDebug />
+      <Hud />
     </>
   );
 }
