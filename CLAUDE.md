@@ -74,11 +74,14 @@ structure · 4 Smart Living Room — smart systems · 5 In-wall Wiring — elect
   math (`cameraPath.ts`) + a billboarded additive flash (`Transitions.tsx`) tinted to the
   incoming dimension + a Rig damping-kick at each of the 5 boundaries. drei portals
   intentionally skipped (read as "a TV showing the other dimension", not "passing through").
-- [~] M3 — Atmosphere per-layer fog/bg lerp DONE (`Atmosphere.tsx`). REMAINING = the
-  seamless 6→1 ENDLESS LOOP (Current→City): enable Lenis `infinite` scroll (or scroll-wrap),
-  reuse the boundary system at p=1 (flash masks the wrap), and resolve the Current's energy
-  into the City's window lights (§7). The nuance to get right is content-repeat on wrap
-  (the HTML sections re-showing from the top — consistent since top=City=loop target).
+- [x] **M3 — Loop + atmosphere DONE.** Per-layer fog/bg lerp (`Atmosphere.tsx`) + the
+  seamless ENDLESS LOOP: Lenis `infinite` wraps progress 1↔0, the Rig snaps the damped
+  progress across the seam (no reverse-fly), and a DOM `LoopVeil` (warm→night radial, above
+  content) masks the wrap snap (arms only after first reaching the end, so load isn't veiled).
+  The dive is endless. (Verified: wrap 1.06→0.06, camZ snaps Current→City.) FUTURE POLISH:
+  the contact section sits in the veil zone (p>0.94) — M6 should reconcile content vs loop
+  (skip-to-contact handles direct access); optionally resolve the Current's particles into
+  city windows for an even smoother seam.
 - [~] M4 — Procedural scenes for ALL SIX dimensions DONE (`src/experience/scenes/`):
   City (towers + ~1800 flickering windows), Building (lit facade + masses), Frame
   (instanced steel cage, pulsing), Room (warm interior + teal devices), Wiring (emissive
