@@ -1,4 +1,6 @@
 import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import { useLayoutEffect } from "react";
 import * as THREE from "three";
 import { ZONES } from "../cameraPath";
 
@@ -16,7 +18,6 @@ const FLOOR_Y = A.y - 3;
 
 const WOOD = new THREE.MeshStandardMaterial({ color: "#241a12", roughness: 0.85, metalness: 0.08 });
 const WALL = new THREE.MeshStandardMaterial({ color: "#211913", roughness: 0.92, metalness: 0.04 });
-const FABRIC = new THREE.MeshStandardMaterial({ color: "#2c2218", roughness: 0.95, metalness: 0.02 });
 const RUG = new THREE.MeshStandardMaterial({ color: "#2e2016", roughness: 0.97, metalness: 0.02 });
 const LAMP = new THREE.MeshStandardMaterial({
   color: "#3a2c18", emissive: "#ffcf95", emissiveIntensity: 1.8, toneMapped: false,
@@ -28,7 +29,22 @@ const DEVICE = new THREE.MeshStandardMaterial({
 const LAMP_X = A.x + 6.5;
 const LAMP_Z = A.z - 3;
 
+useGLTF.preload("/models/sofa/Sofa_01_1k.gltf");
+
 export function RoomScene() {
+  // Real CC0 sofa (Poly Haven) replacing the box. Suspends while loading (see the
+  // <Suspense> wrap in Experience). Traverse once to enable shadow cast/receive.
+  const { scene: sofa } = useGLTF("/models/sofa/Sofa_01_1k.gltf");
+  useLayoutEffect(() => {
+    sofa.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh) {
+        m.castShadow = true;
+        m.receiveShadow = true;
+      }
+    });
+  }, [sofa]);
+
   useFrame((s) => {
     DEVICE.emissiveIntensity = 0.9 + 0.8 * (0.5 + 0.5 * Math.sin(s.clock.elapsedTime * 1.2));
   });
@@ -38,8 +54,8 @@ export function RoomScene() {
       {/* Warm light, with a visible fixture — and it casts the room's shadows. */}
       <pointLight
         position={[LAMP_X, FLOOR_Y + 5, LAMP_Z]}
-        intensity={42}
-        distance={32}
+        intensity={70}
+        distance={34}
         color="#ffcf9a"
         castShadow
         shadow-mapSize={[1024, 1024]}
@@ -66,13 +82,8 @@ export function RoomScene() {
         <sphereGeometry args={[0.5, 18, 18]} />
       </mesh>
 
-      {/* Sofa (seat + back) + coffee table. */}
-      <mesh position={[A.x - 4, FLOOR_Y + 0.6, A.z + 2]} material={FABRIC} castShadow receiveShadow>
-        <boxGeometry args={[5.5, 1.2, 1.9]} />
-      </mesh>
-      <mesh position={[A.x - 4, FLOOR_Y + 1.4, A.z + 2.8]} material={FABRIC} castShadow receiveShadow>
-        <boxGeometry args={[5.5, 1.6, 0.4]} />
-      </mesh>
+      {/* Real sofa (Poly Haven CC0 GLB) — scale/rotation tuned to the room. */}
+      <primitive object={sofa} position={[A.x - 3, FLOOR_Y, A.z + 1]} scale={5.5} rotation={[0, Math.PI, 0]} />
       <mesh position={[A.x - 4, FLOOR_Y + 0.4, A.z - 0.6]} material={WOOD} castShadow receiveShadow>
         <boxGeometry args={[2.4, 0.5, 1.1]} />
       </mesh>

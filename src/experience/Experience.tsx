@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import { createRenderer } from "@/src/three/createRenderer";
@@ -61,7 +62,10 @@ export function Experience() {
           <CityScene />
           <BuildingScene />
           <FrameScene />
-          <RoomScene />
+          {/* Room loads real GLB furniture (async) — Suspense so it pops in cleanly. */}
+          <Suspense fallback={null}>
+            <RoomScene />
+          </Suspense>
           <WiringScene />
           <CurrentScene />
 
