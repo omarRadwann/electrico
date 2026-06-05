@@ -28,9 +28,9 @@ export interface TierConfig {
 }
 
 export const TIERS: Record<QualityTier, TierConfig> = {
-  full: { dprMax: 2, dof: true, ao: true, grain: true, ca: true, lut: true, reflectorRes: 128, shadowMapSize: 1024, envIntensity: 0.55, anisotropy: 8 },
-  reduced: { dprMax: 1.5, dof: true, ao: false, grain: true, ca: true, lut: false, reflectorRes: 64, shadowMapSize: 512, envIntensity: 0.45, anisotropy: 4 },
-  minimal: { dprMax: 1, dof: false, ao: false, grain: false, ca: false, lut: false, reflectorRes: 0, shadowMapSize: 512, envIntensity: 0.35, anisotropy: 1 },
+  full: { dprMax: 2, dof: true, ao: true, grain: true, ca: true, lut: true, reflectorRes: 128, shadowMapSize: 1024, envIntensity: 0.42, anisotropy: 8 },
+  reduced: { dprMax: 1.5, dof: true, ao: false, grain: true, ca: true, lut: false, reflectorRes: 64, shadowMapSize: 512, envIntensity: 0.38, anisotropy: 4 },
+  minimal: { dprMax: 1, dof: false, ao: false, grain: false, ca: false, lut: false, reflectorRes: 0, shadowMapSize: 512, envIntensity: 0.3, anisotropy: 1 },
 };
 
 const ORDER: QualityTier[] = ["minimal", "reduced", "full"];
