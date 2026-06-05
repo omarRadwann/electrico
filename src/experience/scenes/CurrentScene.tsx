@@ -1,4 +1,5 @@
 import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
 import * as THREE from "three";
 import { ZONES } from "../cameraPath";
 
@@ -75,20 +76,41 @@ const UNIFORMS = {
 };
 
 export function CurrentScene() {
+  const coreRef = useRef<THREE.Mesh>(null);
+
   useFrame((_, dt) => {
     UNIFORMS.uTime.value += dt;
+    const core = coreRef.current;
+    if (core) {
+      const t = UNIFORMS.uTime.value;
+      core.scale.setScalar(1.1 + 0.4 * Math.sin(t * 2.2) + 0.18 * Math.sin(t * 6.1));
+    }
   });
 
   return (
-    <points geometry={CURRENT_GEOMETRY} position={[CURRENT.x, CURRENT.y, CURRENT.z - 6]}>
-      <shaderMaterial
-        vertexShader={VERT}
-        fragmentShader={FRAG}
-        uniforms={UNIFORMS}
-        transparent
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-      />
-    </points>
+    <group position={[CURRENT.x, CURRENT.y, CURRENT.z - 6]}>
+      <points geometry={CURRENT_GEOMETRY}>
+        <shaderMaterial
+          vertexShader={VERT}
+          fragmentShader={FRAG}
+          uniforms={UNIFORMS}
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </points>
+      {/* Living core — a bright pulsing heart the filaments stream from. */}
+      <mesh ref={coreRef}>
+        <sphereGeometry args={[1.2, 24, 24]} />
+        <meshBasicMaterial
+          color="#ffd98a"
+          toneMapped={false}
+          transparent
+          opacity={0.85}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+    </group>
   );
 }

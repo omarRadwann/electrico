@@ -15,6 +15,7 @@ import { Lighting } from "./Lighting";
 import { Atmosphere } from "./Atmosphere";
 import { AmbientDebris } from "./AmbientDebris";
 import { CityScene } from "./scenes/CityScene";
+import { CityLife } from "./scenes/CityLife";
 import { BuildingScene } from "./scenes/BuildingScene";
 import { FrameScene } from "./scenes/FrameScene";
 import { RoomScene } from "./scenes/RoomScene";
@@ -61,6 +62,7 @@ export function Experience() {
               one Suspense so they pop in cleanly once ready (the Loader covers it). */}
           <Suspense fallback={null}>
             <CityScene />
+            <CityLife />
             <BuildingScene />
             <FrameScene />
             <RoomScene />
