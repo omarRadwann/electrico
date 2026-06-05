@@ -1,29 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useProgress } from "@react-three/drei";
 import { useExperience } from "@/src/store/useExperience";
 
 /**
- * Branded loader / title screen (spec §3.4): the "powering on" moment, tied to
- * REAL asset-load progress (drei useProgress reads the three LoadingManager).
- * On completion it fades out to reveal the City, then a "scroll to dive" cue
- * appears and disappears on first scroll. Min display so the brand moment reads
- * even when assets load instantly.
+ * Branded loader / title screen (spec §3.4): the "powering on" moment, tied to REAL
+ * asset-load progress (drei useProgress reads the three LoadingManager). A charged
+ * electric field (drifting sparks + a pulsing core glow) sits behind the wordmark,
+ * a glowing charge-bar fills, then on completion the mark SURGES and the screen
+ * fades to reveal the City. A safety timeout guarantees it never sticks even if the
+ * loading manager stalls. The "scroll to dive" cue appears after, until first scroll.
  */
+const SPARKS = 16;
+
 export function Loader() {
   const { progress, active } = useProgress();
   const [minElapsed, setMinElapsed] = useState(false);
+  const [forceDone, setForceDone] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setMinElapsed(true), 1200);
-    return () => clearTimeout(t);
+    // Min display so the brand moment reads even on an instant load.
+    const t = setTimeout(() => setMinElapsed(true), 1400);
+    // Safety net: never let the intro stick if the loading manager stalls.
+    const f = setTimeout(() => setForceDone(true), 7000);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(f);
+    };
   }, []);
 
-  // Derived during render (no setState-in-effect): the loader is done once the
-  // min beat has passed and all assets are loaded; the cue shows until first scroll.
-  const done = minElapsed && progress >= 100 && !active;
+  const pct = Math.round(Math.min(progress, 100));
+  const done = (minElapsed && pct >= 100 && !active) || forceDone;
   const showCue = done && !dismissed;
 
   // Dismiss the cue on the first real scroll (setState in a callback — allowed).
@@ -44,11 +53,20 @@ export function Loader() {
   return (
     <>
       <div className={`loader${done ? " is-done" : ""}`} aria-hidden={done}>
-        <div className="loader-mark">ELECTRICO</div>
-        <div className="loader-bar">
-          <span style={{ width: `${Math.min(progress, 100)}%` }} />
+        {/* Charged electric field — drifting sparks + a pulsing core glow. */}
+        <div className="loader-field" aria-hidden="true">
+          {Array.from({ length: SPARKS }).map((_, i) => (
+            <span key={i} className="loader-spark" style={{ ["--i"]: i } as CSSProperties} />
+          ))}
         </div>
-        <div className="loader-pct">{Math.round(Math.min(progress, 100))}% · powering the grid</div>
+        <div className="loader-inner">
+          <p className="loader-eyebrow">Power · Structure · Smart systems</p>
+          <h1 className="loader-mark">ELECTRICO</h1>
+          <div className="loader-bar">
+            <span style={{ width: `${pct}%` }} />
+          </div>
+          <p className="loader-pct">{pct}% · powering the grid</p>
+        </div>
       </div>
 
       {showCue && (

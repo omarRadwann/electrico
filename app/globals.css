@@ -485,46 +485,128 @@ a {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: var(--bg-night);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1.7rem;
+  overflow: hidden;
+  /* A faint amber core glow energising the night — the grid powering up. */
+  background:
+    radial-gradient(135% 95% at 50% 47%, rgba(232, 162, 61, 0.1) 0%, rgba(232, 162, 61, 0.028) 24%, transparent 54%),
+    var(--bg-night);
   opacity: 1;
-  transition: opacity 0.9s ease;
+  transition: opacity 1s ease;
 }
 .loader.is-done {
   opacity: 0;
   pointer-events: none;
 }
+
+/* Charged electric field behind the wordmark. */
+.loader-field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.loader-field::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  width: min(560px, 80vw);
+  height: min(560px, 80vw);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(232, 162, 61, 0.16), transparent 62%);
+  filter: blur(10px);
+  animation: loader-pulse 3.4s ease-in-out infinite;
+}
+.loader-spark {
+  position: absolute;
+  bottom: -12px;
+  left: calc(5% + var(--i) * 6%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 9px 2px rgba(232, 162, 61, 0.75);
+  opacity: 0;
+  animation: loader-rise 5.4s linear infinite;
+  animation-delay: calc(var(--i) * -0.58s);
+}
+@keyframes loader-rise {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  10% { opacity: 1; }
+  82% { opacity: 0.7; }
+  100% { transform: translateY(-94vh) scale(1.15); opacity: 0; }
+}
+@keyframes loader-pulse {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+.loader-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  text-align: center;
+  padding: 1.5rem;
+}
+.loader-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--amber);
+  animation: loader-fade-in 1.1s ease both;
+}
 .loader-mark {
   font-family: var(--font-display);
-  font-size: clamp(2.2rem, 8vw, 5rem);
+  font-size: clamp(2.6rem, 11vw, 7rem);
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: clamp(0.1em, 1.4vw, 0.28em);
   text-transform: uppercase;
   color: var(--fg);
+  text-shadow: 0 0 32px rgba(232, 162, 61, 0.22);
+  animation: loader-mark-in 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.loader.is-done .loader-mark {
+  animation: loader-surge 1s ease forwards;
 }
 .loader-bar {
-  width: min(240px, 52vw);
-  height: 1px;
-  background: rgba(243, 237, 226, 0.15);
+  width: min(280px, 60vw);
+  height: 2px;
+  background: rgba(243, 237, 226, 0.12);
+  border-radius: 2px;
   overflow: hidden;
 }
 .loader-bar span {
   display: block;
   height: 100%;
-  background: var(--amber);
-  box-shadow: 0 0 8px var(--amber);
-  transition: width 0.3s ease;
+  background: linear-gradient(90deg, rgba(232, 162, 61, 0.45), var(--amber));
+  box-shadow: 0 0 12px var(--amber);
+  transition: width 0.35s ease;
 }
 .loader-pct {
   font-family: var(--font-mono);
   font-size: 0.62rem;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--fg-dim);
+}
+@keyframes loader-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes loader-mark-in {
+  from { opacity: 0; letter-spacing: 0.5em; filter: blur(9px); }
+  to { opacity: 1; filter: blur(0); }
+}
+@keyframes loader-surge {
+  0% { text-shadow: 0 0 32px rgba(232, 162, 61, 0.22); }
+  45% { text-shadow: 0 0 70px rgba(232, 162, 61, 0.95), 0 0 130px rgba(232, 162, 61, 0.5); }
+  100% { text-shadow: 0 0 32px rgba(232, 162, 61, 0.22); }
 }
 
 .scroll-cue {
@@ -573,7 +655,11 @@ a {
   .hud-layer,
   .hud-layer-rule,
   .narrative-hud-line,
-  .scroll-cue-arrow {
+  .scroll-cue-arrow,
+  .loader-spark,
+  .loader-field::before,
+  .loader-mark,
+  .loader-eyebrow {
     animation: none;
   }
 }
