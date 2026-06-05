@@ -3,6 +3,8 @@ import { MeshReflectorMaterial } from "@react-three/drei";
 import { useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
 import { ZONES } from "../cameraPath";
+import { useExperience } from "@/src/store/useExperience";
+import { TIERS } from "../quality";
 
 /**
  * Dimension 1 — The City at Night (spec §7). The opening "powering on" vista the
@@ -36,6 +38,9 @@ export function CityScene() {
   const towersRef = useRef<THREE.InstancedMesh>(null);
   const windowsRef = useRef<THREE.InstancedMesh>(null);
   const greeblesRef = useRef<THREE.InstancedMesh>(null);
+  // The wet-street reflection is the heaviest single cost in the City — the first
+  // quality-tier toggle (res 128 → 64 → off → a plain dark floor on minimal).
+  const reflectorRes = TIERS[useExperience((s) => s.quality)].reflectorRes;
 
   useLayoutEffect(() => {
     const towers = towersRef.current;
@@ -155,17 +160,22 @@ export function CityScene() {
           reflect in it. resolution capped at 512 (cost scales hard with it). */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[CITY.x, GROUND_Y, CITY.z]}>
         <planeGeometry args={[260, 260]} />
-        <MeshReflectorMaterial
-          resolution={128}
-          mirror={0}
-          blur={[300, 300]}
-          mixBlur={2.5}
-          mixStrength={0.55}
-          roughness={0.85}
-          depthScale={0}
-          color="#070912"
-          metalness={0.25}
-        />
+        {reflectorRes > 0 ? (
+          <MeshReflectorMaterial
+            key={reflectorRes} /* resolution is constructor-time — remount to change it */
+            resolution={reflectorRes}
+            mirror={0}
+            blur={[300, 300]}
+            mixBlur={2.5}
+            mixStrength={0.55}
+            roughness={0.85}
+            depthScale={0}
+            color="#070912"
+            metalness={0.25}
+          />
+        ) : (
+          <meshStandardMaterial color="#070912" roughness={0.85} metalness={0.25} />
+        )}
       </mesh>
 
       {/* Dark tower masses. */}

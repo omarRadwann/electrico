@@ -11,6 +11,7 @@ import { AmbientAudio } from "@/src/ui/AmbientAudio";
 import { Loader } from "@/src/ui/Loader";
 import { LoopVeil } from "@/src/ui/LoopVeil";
 import { Rig } from "./Rig";
+import { QualityController } from "./quality";
 import { Atmosphere } from "./Atmosphere";
 import { AmbientDebris } from "./AmbientDebris";
 import { CityScene } from "./scenes/CityScene";
@@ -59,6 +60,7 @@ export function Experience() {
           />
 
           <Rig />
+          <QualityController />
           <Atmosphere />
 
           {/* Dimensions 1 → 6 along the dive path. */}
