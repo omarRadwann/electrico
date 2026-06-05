@@ -2,6 +2,7 @@ import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
 import { ZONES } from "../cameraPath";
+import { useSurfaceMaps } from "../useSurfaceMaps";
 
 /**
  * Dimension 3 — The Steel Frame (spec §7): the hidden order beneath the surface.
@@ -32,6 +33,13 @@ const _X = new THREE.Vector3(1, 0, 0);
 export function FrameScene() {
   const ref = useRef<THREE.InstancedMesh>(null);
   const matRef = useRef<THREE.MeshStandardMaterial>(null);
+  // Brushed-metal relief on the steel between the glowing emissive.
+  const metal = useSurfaceMaps(
+    "/textures/metal_nor_gl_1k.jpg",
+    "/textures/metal_rough_1k.jpg",
+    1,
+    2,
+  );
 
   useLayoutEffect(() => {
     const mesh = ref.current;
@@ -122,6 +130,8 @@ export function FrameScene() {
         toneMapped={false}
         roughness={0.3}
         metalness={0.9}
+        normalMap={metal.normalMap}
+        roughnessMap={metal.roughnessMap}
       />
     </instancedMesh>
   );

@@ -64,15 +64,16 @@ export function Experience() {
           <Atmosphere />
 
           {/* Dimensions 1 → 6 along the dive path. */}
-          <CityScene />
-          <BuildingScene />
-          <FrameScene />
-          {/* Room loads real GLB furniture (async) — Suspense so it pops in cleanly. */}
+          {/* Scenes load async assets (GLB furniture, tiling PBR surface maps) —
+              one Suspense so they pop in cleanly once ready (the Loader covers it). */}
           <Suspense fallback={null}>
+            <CityScene />
+            <BuildingScene />
+            <FrameScene />
             <RoomScene />
+            <WiringScene />
+            <CurrentScene />
           </Suspense>
-          <WiringScene />
-          <CurrentScene />
 
           <AmbientDebris />
           <Transitions />

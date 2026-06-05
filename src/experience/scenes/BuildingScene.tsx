@@ -2,6 +2,7 @@ import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
 import { ZONES } from "../cameraPath";
+import { useSurfaceMaps } from "../useSurfaceMaps";
 
 /**
  * Dimension 2 — The Building (spec §7): approaching, architectural, grounded.
@@ -58,6 +59,13 @@ export function BuildingScene() {
   const farWinRef = useRef<THREE.InstancedMesh>(null);
   const crownRef = useRef<THREE.InstancedMesh>(null);
   const crownMat = useRef<THREE.MeshStandardMaterial>(null);
+  // Concrete relief on the solid masses so they catch light as real surfaces.
+  const concrete = useSurfaceMaps(
+    "/textures/concrete_nor_gl_1k.jpg",
+    "/textures/concrete_rough_1k.jpg",
+    3,
+    4,
+  );
 
   useLayoutEffect(() => {
     const w = winRef.current;
@@ -180,7 +188,13 @@ export function BuildingScene() {
       {SKYLINE.map(([x, y, z, w, h, d], idx) => (
         <mesh key={idx} position={[x, y, z]}>
           <boxGeometry args={[w, h, d]} />
-          <meshStandardMaterial color="#0a0e16" roughness={0.72} metalness={0.22} />
+          <meshStandardMaterial
+            color="#0a0e16"
+            roughness={0.72}
+            metalness={0.22}
+            normalMap={concrete.normalMap}
+            roughnessMap={concrete.roughnessMap}
+          />
         </mesh>
       ))}
 
@@ -194,7 +208,13 @@ export function BuildingScene() {
           below the dive's flight line so the camera passes over it, not through. */}
       <mesh position={[A.x, A.y - 22, BODY_Z]}>
         <boxGeometry args={[26, 34, 16]} />
-        <meshStandardMaterial color="#0c1119" roughness={0.7} metalness={0.28} />
+        <meshStandardMaterial
+          color="#0c1119"
+          roughness={0.7}
+          metalness={0.28}
+          normalMap={concrete.normalMap}
+          roughnessMap={concrete.roughnessMap}
+        />
       </mesh>
 
       {/* Lit facade the camera dives toward (thin — the mid band is the fly-through). */}
