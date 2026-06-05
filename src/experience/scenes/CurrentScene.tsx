@@ -16,13 +16,13 @@ const COUNT = 650;
 const SPAN = 44; // length of the flow tube along z (loops within this)
 
 // Geometry built once at module scope (Math.random out of the render phase).
-function buildGeometry(): THREE.BufferGeometry {
+function buildGeometry(count: number, maxR: number): THREE.BufferGeometry {
   const g = new THREE.BufferGeometry();
-  const position = new Float32Array(COUNT * 3);
-  const seed = new Float32Array(COUNT);
-  for (let i = 0; i < COUNT; i++) {
+  const position = new Float32Array(count * 3);
+  const seed = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
     const a = Math.random() * Math.PI * 2;
-    const r = Math.random() * Math.random() * 6.5; // denser toward the core
+    const r = Math.random() * Math.random() * maxR; // denser toward the core
     position[i * 3] = Math.cos(a) * r;
     position[i * 3 + 1] = Math.sin(a) * r;
     position[i * 3 + 2] = (Math.random() - 0.5) * SPAN;
@@ -32,7 +32,10 @@ function buildGeometry(): THREE.BufferGeometry {
   g.setAttribute("aSeed", new THREE.BufferAttribute(seed, 1));
   return g;
 }
-const CURRENT_GEOMETRY = buildGeometry();
+const CURRENT_GEOMETRY = buildGeometry(COUNT, 6.5);
+// Secondary inner swirl — cooler, slower, tighter — adds depth + rhythm behind the
+// warm flow (a second harmonic of the current).
+const SECONDARY_GEOMETRY = buildGeometry(280, 3.2);
 
 const VERT = /* glsl */ `
   uniform float uTime;
@@ -73,6 +76,10 @@ const FRAG = /* glsl */ `
 const UNIFORMS = {
   uTime: { value: 0 },
   uColor: { value: new THREE.Color("#ffae3a") },
+};
+const SECONDARY_UNIFORMS = {
+  uTime: { value: 0 },
+  uColor: { value: new THREE.Color("#5a8cff") },
 };
 
 // Radial discharge arcs — bright blue-white bolts flaring from the core outward.
@@ -115,6 +122,7 @@ export function CurrentScene() {
 
   useFrame((_, dt) => {
     UNIFORMS.uTime.value += dt;
+    SECONDARY_UNIFORMS.uTime.value += dt * 0.45; // slower harmonic
     const t = UNIFORMS.uTime.value;
     const core = coreRef.current;
     if (core) core.scale.setScalar(1.1 + 0.4 * Math.sin(t * 2.2) + 0.18 * Math.sin(t * 6.1));
@@ -139,6 +147,17 @@ export function CurrentScene() {
           vertexShader={VERT}
           fragmentShader={FRAG}
           uniforms={UNIFORMS}
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </points>
+      {/* Secondary cooler/slower inner swirl — depth + rhythm. */}
+      <points geometry={SECONDARY_GEOMETRY}>
+        <shaderMaterial
+          vertexShader={VERT}
+          fragmentShader={FRAG}
+          uniforms={SECONDARY_UNIFORMS}
           transparent
           depthWrite={false}
           blending={THREE.AdditiveBlending}

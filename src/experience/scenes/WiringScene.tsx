@@ -30,8 +30,8 @@ function makeCurve(k: number, jitter: number): THREE.CatmullRomCurve3 {
   return new THREE.CatmullRomCurve3(pts);
 }
 
-const CONDUIT_CURVES = Array.from({ length: 5 }, (_, k) => makeCurve(k, 6));
-const COPPER_CURVES = Array.from({ length: 4 }, (_, k) => makeCurve(k + 20, 3.5));
+const CONDUIT_CURVES = Array.from({ length: 8 }, (_, k) => makeCurve(k, 6.5));
+const COPPER_CURVES = Array.from({ length: 6 }, (_, k) => makeCurve(k + 20, 3.8));
 const CONDUIT_GEOMS = CONDUIT_CURVES.map(
   (c) => new THREE.TubeGeometry(c, 90, 0.34 + Math.random() * 0.12, 9, false),
 );

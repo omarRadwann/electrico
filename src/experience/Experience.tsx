@@ -17,11 +17,13 @@ import { AmbientDebris } from "./AmbientDebris";
 import { CityScene } from "./scenes/CityScene";
 import { CityLife } from "./scenes/CityLife";
 import { CityInfra } from "./scenes/CityInfra";
+import { CityDepth } from "./scenes/CityDepth";
 import { BuildingScene } from "./scenes/BuildingScene";
 import { BuildingSite } from "./scenes/BuildingSite";
 import { FrameScene } from "./scenes/FrameScene";
 import { FrameSurge } from "./scenes/FrameSurge";
 import { RoomScene } from "./scenes/RoomScene";
+import { RoomProps } from "./scenes/RoomProps";
 import { WiringScene } from "./scenes/WiringScene";
 import { CurrentScene } from "./scenes/CurrentScene";
 import { Transitions } from "./Transitions";
@@ -65,6 +67,7 @@ export function Experience() {
               one Suspense so they pop in cleanly once ready (the Loader covers it). */}
           <Suspense fallback={null}>
             <CityScene />
+            <CityDepth />
             <CityLife />
             <CityInfra />
             <BuildingScene />
@@ -72,6 +75,7 @@ export function Experience() {
             <FrameScene />
             <FrameSurge />
             <RoomScene />
+            <RoomProps />
             <WiringScene />
             <CurrentScene />
           </Suspense>
