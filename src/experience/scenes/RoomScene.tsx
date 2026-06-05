@@ -114,7 +114,7 @@ export function RoomScene() {
       {/* Warm light, with a visible fixture — and it casts the room's shadows. */}
       <pointLight
         position={[LAMP_X, FLOOR_Y + 5, LAMP_Z]}
-        intensity={70}
+        intensity={85}
         distance={34}
         color="#ffcf9a"
         castShadow
@@ -123,7 +123,7 @@ export function RoomScene() {
       />
       {/* Warm fill over the furniture cluster so the real models read clearly
           against the dark interior (no shadow — just lift). */}
-      <pointLight position={[A.x - 2, FLOOR_Y + 6, A.z + 1]} intensity={45} distance={24} color="#ffe2b4" />
+      <pointLight position={[A.x - 2, FLOOR_Y + 6, A.z + 1]} intensity={52} distance={24} color="#ffe2b4" />
 
       {/* Shell: floor + back wall + side wall (a corner) — all catch shadow. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[A.x, FLOOR_Y, A.z]} receiveShadow>

@@ -52,7 +52,7 @@ export function Experience() {
         >
           {/* Single continuous "night" world; Atmosphere shifts these per layer. */}
           <color attach="background" args={["#05070d"]} />
-          <fog attach="fog" args={["#05070d", 24, 185]} />
+          <fog attach="fog" args={["#05070d", 40, 150]} />
 
           {/* Directional key + night IBL + shaped Lightformer area lights — gives
               steel/glass/metal real specular highlights (the normal maps catch them). */}

@@ -17,7 +17,15 @@ const NIGHT = new THREE.Color("#05070d");
 // category colour — the teal is the smart-device ACCENT (§7), not a full-frame
 // wash, so the warm-lit furniture actually reads instead of drowning in teal.
 const FOG_TINTS = ZONES.map((z, i) =>
-  i === 3 ? new THREE.Color("#161009") : new THREE.Color(z.color).lerp(NIGHT, 0.8),
+  i === 3
+    ? new THREE.Color("#161009")
+    : i === 1 || i === 2
+      ? // Structure zones (Building, Frame): the old lerp 0.8 gave a luminous
+        // blue-GRAY (~#20232c) — the milky haze the owner saw. Sink them to cool
+        // near-night so the lit subject carries the frame.
+        new THREE.Color("#0b0f17")
+      : // Power / smart zones: deeper night (0.92) but a faint category hue remains.
+        new THREE.Color(z.color).lerp(NIGHT, 0.92),
 );
 
 const _fog = new THREE.Color();
@@ -36,7 +44,7 @@ export function Atmosphere() {
     _fog.copy(FOG_TINTS[i]).lerp(FOG_TINTS[next], t);
     if (scene.fog) (scene.fog as THREE.Fog).color.copy(_fog);
     if (scene.background instanceof THREE.Color) {
-      _bg.copy(_fog).multiplyScalar(0.4);
+      _bg.copy(_fog).multiplyScalar(0.18);
       scene.background.copy(_bg);
     }
   });

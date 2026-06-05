@@ -35,6 +35,11 @@ export function createRenderer(
   // light sources stay punchy and bloom as tuned. (sRGB OETF still applied at
   // output — tone curve and colour-space encode are separate stages.)
   renderer.toneMapping = THREE.AgXToneMapping;
+  // Pull AgX mid-tones down so the night base reads genuinely deep instead of
+  // milky. Emissive materials are toneMapped:false, so the window/steel/copper
+  // light sources bypass this and pop HARDER against the darker base. Cheapest
+  // single de-wash lever.
+  renderer.toneMappingExposure = 0.8;
   // Soft shadow maps, used selectively (only the Room's lamp casts) for grounded
   // realism without the cost of shadowing all six dimensions.
   renderer.shadowMap.enabled = true;

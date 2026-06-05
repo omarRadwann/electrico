@@ -4,6 +4,8 @@ import * as THREE from "three";
 import { ZONES } from "../cameraPath";
 import { useSurfaceMaps } from "../useSurfaceMaps";
 import { asset } from "@/src/lib/asset";
+import { useExperience } from "@/src/store/useExperience";
+import { TIERS } from "../quality";
 
 /**
  * Dimension 2 — The Building (spec §7): approaching, architectural, grounded.
@@ -31,7 +33,7 @@ const COOL_WIN = new THREE.Color("#bcd2ff"); // ~15% of windows read cooler — 
 
 // Solid tower body lives below the flight line; crown above it. Front face on the
 // facade plane so the windows read as set into the building.
-const BODY_Z = FACADE_Z - 8; // -77 (centre; front face ≈ FACADE_Z)
+const BODY_Z = FACADE_Z - 9; // -78 (front face at -70, just behind the recessed windows — avoids z-fight)
 const CROWN_Y0 = A.y + FH / 2 - 2; // ≈ +14.5, just under the facade top
 const CROWN_Y1 = CROWN_Y0 + 15; // exposed steel rises above the lit floors
 const CROWN_BEAMS = 24;
@@ -55,11 +57,18 @@ const _dir = new THREE.Vector3();
 const _q = new THREE.Quaternion();
 const _X = new THREE.Vector3(1, 0, 0);
 
+// Shared spotlight aim target (one Building scene → module singleton, allocated
+// once; written only via the <primitive> position, never in render).
+const KEY_TARGET = new THREE.Object3D();
+
 export function BuildingScene() {
+  const tier = TIERS[useExperience((s) => s.quality)];
   const winRef = useRef<THREE.InstancedMesh>(null);
   const farWinRef = useRef<THREE.InstancedMesh>(null);
   const crownRef = useRef<THREE.InstancedMesh>(null);
   const crownMat = useRef<THREE.MeshStandardMaterial>(null);
+  const keySpot = useRef<THREE.SpotLight>(null);
+  const spotWarm = useRef(0);
   // Concrete relief on the solid masses so they catch light as real surfaces.
   const concrete = useSurfaceMaps(
     asset("/textures/concrete_nor_gl_1k.jpg"),
@@ -78,13 +87,13 @@ export function BuildingScene() {
         for (let c = 0; c < COLS; c++) {
           const x = A.x + (c / (COLS - 1) - 0.5) * FW + (Math.random() - 0.5) * 0.4;
           const y = A.y + (r / (ROWS - 1) - 0.5) * FH + (Math.random() - 0.5) * 0.4;
-          dummy.position.set(x, y, FACADE_Z);
-          dummy.scale.set(0.7, 0.95, 0.12);
+          dummy.position.set(x, y, FACADE_Z - 0.25);
+          dummy.scale.set(0.7, 0.95, 0.5);
           dummy.rotation.set(0, 0, 0);
           dummy.updateMatrix();
           w.setMatrixAt(i, dummy.matrix);
-          const brightness = Math.random() < 0.22 ? 0.0 : 0.45 + Math.random() * 1.2;
-          color.copy(Math.random() < 0.15 ? COOL_WIN : WIN_COLOR).multiplyScalar(brightness);
+          const brightness = Math.random() < 0.28 ? 0.0 : 0.7 + Math.random() * 1.4;
+          color.copy(Math.random() < 0.28 ? COOL_WIN : WIN_COLOR).multiplyScalar(brightness);
           w.setColorAt(i, color);
           i++;
         }
@@ -166,8 +175,8 @@ export function BuildingScene() {
         dummy.rotation.set(0, 0, 0);
         dummy.updateMatrix();
         far.setMatrixAt(n, dummy.matrix);
-        const on = Math.random() < 0.4 ? 0.0 : 0.16 + Math.random() * 0.5;
-        color.copy(Math.random() < 0.18 ? COOL_WIN : WIN_COLOR).multiplyScalar(on);
+        const on = Math.random() < 0.32 ? 0.0 : 0.45 + Math.random() * 0.95;
+        color.copy(Math.random() < 0.2 ? COOL_WIN : WIN_COLOR).multiplyScalar(on);
         far.setColorAt(n, color);
       }
       far.instanceMatrix.needsUpdate = true;
@@ -179,7 +188,13 @@ export function BuildingScene() {
     // Gentle steady glow — cooler/dimmer than THE FRAME so the Frame stays the
     // "blueprint" star, but enough to read as live exposed steel.
     if (crownMat.current) {
-      crownMat.current.emissiveIntensity = 0.3 + 0.12 * Math.sin(s.clock.elapsedTime * 1.1);
+      crownMat.current.emissiveIntensity = 0.6 + 0.18 * Math.sin(s.clock.elapsedTime * 1.1);
+    }
+    // PERF: freeze the static key-spot shadow map after a short warmup (full tier).
+    const sp = keySpot.current;
+    if (sp && tier.heavyProps) {
+      if (spotWarm.current < 12) spotWarm.current += 1;
+      else if (sp.shadow.autoUpdate) sp.shadow.autoUpdate = false;
     }
   });
 
@@ -207,10 +222,10 @@ export function BuildingScene() {
 
       {/* Solid tower base — the lower floors the lit facade is set into. Sits
           below the dive's flight line so the camera passes over it, not through. */}
-      <mesh position={[A.x, A.y - 22, BODY_Z]}>
-        <boxGeometry args={[26, 34, 16]} />
+      <mesh position={[A.x, A.y, BODY_Z]} castShadow receiveShadow>
+        <boxGeometry args={[26, 40, 16]} />
         <meshStandardMaterial
-          color="#0c1119"
+          color="#20303f"
           roughness={0.7}
           metalness={0.28}
           normalMap={concrete.normalMap}
@@ -245,14 +260,39 @@ export function BuildingScene() {
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial
           ref={crownMat}
-          color="#4a5468"
+          color="#5c6b86"
           emissive="#4d74c8"
-          emissiveIntensity={0.3}
+          emissiveIntensity={0.6}
           toneMapped={false}
           roughness={0.35}
           metalness={0.9}
         />
       </instancedMesh>
+
+      {/* Raking warm KEY (casts on full) models the tower mass; cool back-rim peels
+          the silhouette off the night; two warm spill points bleed light onto the
+          body between the windows so the facade reads as a lit wall, not cards.
+          All lateral/above the x=-3 dive line and IN FRONT of the facade. */}
+      <primitive object={KEY_TARGET} position={[A.x, A.y, FACADE_Z]} />
+      <spotLight
+        ref={keySpot}
+        position={[A.x - 16, A.y + 20, FACADE_Z + 10]}
+        target={KEY_TARGET}
+        color="#ffd9a0"
+        intensity={2400}
+        distance={120}
+        decay={2}
+        angle={0.62}
+        penumbra={0.8}
+        castShadow={tier.heavyProps}
+        shadow-mapSize={[tier.shadowMapSize, tier.shadowMapSize]}
+        shadow-bias={-0.0005}
+        shadow-camera-near={1}
+        shadow-camera-far={120}
+      />
+      <pointLight position={[A.x + 16, A.y + 6, FACADE_Z + 8]} color="#6f86c8" intensity={120} distance={70} decay={2} />
+      <pointLight position={[A.x - 6, A.y + 5, FACADE_Z + 3]} color="#ffc46b" intensity={70} distance={26} decay={2} />
+      <pointLight position={[A.x + 7, A.y - 7, FACADE_Z + 3]} color="#ffc46b" intensity={70} distance={26} decay={2} />
     </group>
   );
 }

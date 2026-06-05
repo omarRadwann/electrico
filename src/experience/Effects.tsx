@@ -85,11 +85,11 @@ export function Effects() {
       />
       {/* Bright-only bloom — only true light sources glow, not the whole frame. */}
       <Bloom
-        luminanceThreshold={0.42}
-        luminanceSmoothing={0.07}
+        luminanceThreshold={0.55}
+        luminanceSmoothing={0.025}
         mipmapBlur
-        intensity={1.0}
-        radius={0.62}
+        intensity={1.15}
+        radius={0.5}
       />
       {/* A hint of lens fringing — character, not a glitch. Off below `reduced`. */}
       <ChromaticAberration
@@ -99,15 +99,15 @@ export function Effects() {
         opacity={tier.ca ? 1 : 0}
       />
       {/* Cinematic grade — slight desaturate + a touch more contrast for punch. */}
-      <HueSaturation saturation={-0.06} />
-      <BrightnessContrast brightness={-0.02} contrast={0.15} />
+      <HueSaturation saturation={0.03} />
+      <BrightnessContrast brightness={-0.06} contrast={0.3} />
       {/* Fine film grain over the night base (kills flat digital banding). */}
       <Noise
         premultiply
         blendFunction={BlendFunction.OVERLAY}
         opacity={tier.grain ? 0.06 : 0}
       />
-      <Vignette offset={0.3} darkness={0.72} />
+      <Vignette offset={0.4} darkness={0.92} />
       <SMAA />
     </EffectComposer>
   );

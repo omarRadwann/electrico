@@ -4,6 +4,8 @@ import * as THREE from "three";
 import { ZONES } from "../cameraPath";
 import { useSurfaceMaps } from "../useSurfaceMaps";
 import { asset } from "@/src/lib/asset";
+import { useExperience } from "@/src/store/useExperience";
+import { TIERS } from "../quality";
 
 /**
  * Dimension 3 — The Steel Frame (spec §7): the hidden order beneath the surface.
@@ -18,7 +20,10 @@ const MAX_BEAMS = 160;
 const S = 6; // half-span between columns
 const H = 30;
 const LEVELS = 5;
-const TH = 0.16; // member thickness
+const TH = 0.24; // member thickness — at fly-through distance 0.16 was sub-pixel wire
+
+// Shared spotlight aim target (one Frame scene → module singleton).
+const FRAME_TARGET = new THREE.Object3D();
 // Two connected bays along −Z (the camera's forward look) so the fly-through is a
 // real tunnel of steel receding ahead, not a single sparse cube.
 const BAY_Z = [A.z, A.z - 2 * S]; // -102, -114  → continuous z −96..−120
@@ -32,9 +37,12 @@ const _q = new THREE.Quaternion();
 const _X = new THREE.Vector3(1, 0, 0);
 
 export function FrameScene() {
+  const tier = TIERS[useExperience((s) => s.quality)];
   const ref = useRef<THREE.InstancedMesh>(null);
   const matRef = useRef<THREE.MeshStandardMaterial>(null);
   const boltsRef = useRef<THREE.InstancedMesh>(null);
+  const frameSpot = useRef<THREE.SpotLight>(null);
+  const spotWarm = useRef(0);
   // Brushed-metal relief on the steel between the glowing emissive.
   const metal = useSurfaceMaps(
     asset("/textures/metal_nor_gl_1k.jpg"),
@@ -78,7 +86,7 @@ export function FrameScene() {
       const cz = [zc - S, zc - S, zc + S, zc + S];
 
       // 4 corner columns.
-      for (let k = 0; k < 4; k++) setBeam(cx[k], yBot, cz[k], cx[k], yTop, cz[k], 0.22);
+      for (let k = 0; k < 4; k++) setBeam(cx[k], yBot, cz[k], cx[k], yTop, cz[k], 0.34);
 
       // Perimeter ring beams at each level.
       for (let l = 0; l < LEVELS; l++) {
@@ -139,22 +147,28 @@ export function FrameScene() {
     if (matRef.current) {
       // Glowing cool x-ray skeleton (spec §7: the hidden order / blueprint). The
       // beams read clearly against the dark and pulse as if under load.
-      matRef.current.emissiveIntensity = 0.55 + 0.3 * Math.sin(s.clock.elapsedTime * 1.4);
+      matRef.current.emissiveIntensity = 2.3 + 0.45 * Math.sin(s.clock.elapsedTime * 1.4);
+    }
+    // PERF: freeze the static frame key-spot shadow map after a short warmup (full tier).
+    const sp = frameSpot.current;
+    if (sp && tier.heavyProps) {
+      if (spotWarm.current < 12) spotWarm.current += 1;
+      else if (sp.shadow.autoUpdate) sp.shadow.autoUpdate = false;
     }
   });
 
   return (
     <group>
-      <instancedMesh ref={ref} args={[undefined, undefined, MAX_BEAMS]} frustumCulled={false}>
+      <instancedMesh ref={ref} args={[undefined, undefined, MAX_BEAMS]} frustumCulled={false} castShadow receiveShadow>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial
           ref={matRef}
-          color="#586273"
-          emissive="#4d74c8"
-          emissiveIntensity={0.7}
+          color="#0b101a"
+          emissive="#6a90ff"
+          emissiveIntensity={2.3}
           toneMapped={false}
-          roughness={0.3}
-          metalness={0.9}
+          roughness={0.72}
+          metalness={0.35}
           normalMap={metal.normalMap}
           roughnessMap={metal.roughnessMap}
         />
@@ -162,8 +176,31 @@ export function FrameScene() {
       {/* Bolt / gusset studs at the joints — engineering craft (glint the blue glow). */}
       <instancedMesh ref={boltsRef} args={[undefined, undefined, 48]} frustumCulled={false}>
         <sphereGeometry args={[1, 8, 8]} />
-        <meshStandardMaterial color="#8893a6" emissive="#4d74c8" emissiveIntensity={0.5} metalness={0.9} roughness={0.4} toneMapped={false} />
+        <meshStandardMaterial color="#0b101a" emissive="#6a90ff" emissiveIntensity={2.3} metalness={0.4} roughness={0.5} toneMapped={false} />
       </instancedMesh>
+
+      {/* Cool raking KEY gives the truss a lit/dark gradient + catches the metal &
+          normal maps as moving specular; back-rim peels the bones off the void;
+          self-shadow (full tier) turns flat ribbons into 3D box-section steel. Both
+          lights sit >9u lateral of the x=2.5 flight line. */}
+      <primitive object={FRAME_TARGET} position={[A.x, A.y, A.z - 6]} />
+      <spotLight
+        ref={frameSpot}
+        position={[A.x + 12, A.y + 9, A.z + 10]}
+        target={FRAME_TARGET}
+        color="#9fc0ff"
+        intensity={300}
+        distance={60}
+        decay={2}
+        angle={0.7}
+        penumbra={0.5}
+        castShadow={tier.heavyProps}
+        shadow-mapSize={[tier.shadowMapSize, tier.shadowMapSize]}
+        shadow-bias={-0.0006}
+        shadow-camera-near={1}
+        shadow-camera-far={80}
+      />
+      <pointLight position={[A.x - 11, A.y + 3, A.z - 18]} color="#7aa5ff" intensity={140} distance={40} decay={2} />
     </group>
   );
 }

@@ -189,7 +189,10 @@ export function WiringScene() {
         <boxGeometry args={[1, 1, 1]} />
         <meshBasicMaterial toneMapped={false} />
       </instancedMesh>
-      <pointLight position={[BOX.x, BOX.y, BOX.z + 3]} color="#7fb0ff" intensity={10} distance={18} decay={2} />
+      <pointLight position={[BOX.x, BOX.y, BOX.z + 3]} color="#7fb0ff" intensity={14} distance={18} decay={2} />
+      {/* Cool rim (no shadow, all tiers) gives the dark conduits a lit/dark side so
+          they read as round tubes, not flat silhouettes. Lateral to the x=1.5 dive. */}
+      <pointLight position={[A.x - 3, A.y + 3, A.z + 6]} color="#9fc0ff" intensity={30} distance={30} decay={2} />
     </group>
   );
 }
