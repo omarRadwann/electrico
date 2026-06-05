@@ -1,5 +1,6 @@
 import {
   EffectComposer,
+  N8AO,
   DepthOfField,
   Bloom,
   Vignette,
@@ -10,6 +11,7 @@ import {
   SMAA,
 } from "@react-three/postprocessing";
 import { BlendFunction, DepthOfFieldEffect } from "postprocessing";
+import type { N8AOPostPass } from "n8ao";
 import { Vector2 } from "three";
 import { useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
@@ -20,16 +22,17 @@ import { focusTarget } from "./cameraPath";
 /**
  * Postprocessing stack — the cinematic layer (spec §5/§6). Bloom is essential
  * (the glow is what makes the energy read as *alive*); on top of it a filmic
- * grade (AgX tone curve in createRenderer + this chain) gives the "premium
- * render" feel: depth-of-field focus on the framed subject, a subtle desaturate +
- * contrast, a whisper of chromatic aberration, fine film grain.
+ * grade (AgX in createRenderer + this chain): ambient occlusion for crevice depth,
+ * depth-of-field focus on the framed subject, a subtle desaturate + contrast, a
+ * whisper of chromatic aberration, fine film grain.
  *
- * Tier gating: the cheap effects (grain, CA) disable via blend OPACITY (a uniform
- * on the existing effect — no recreation/flash). The expensive DOF disables via
- * blendFunction SKIP through a ref (no pass-list churn; one brief recompile on the
- * rare tier change). `quality` is low-frequency, so subscribing here is correct.
+ * Tier gating without remounting the composer (which would flash):
+ *  - N8AO is a Pass → toggle `.enabled` (composer skips a disabled pass; no cost).
+ *  - DOF is an Effect → blendFunction SKIP (no pass-list churn; one brief recompile).
+ *  - grain + CA disable via blend OPACITY (a uniform; instant, no recompile).
+ * `quality` is low-frequency, so subscribing here is correct.
  *
- * - DOF runs FIRST so bloom blooms the bokeh discs (the soft-glowing-orbs look).
+ * - AO runs first (darkens crevices), then DOF, then bloom blooms the bokeh.
  * - multisampling=0: MSAA collides with bloom's mipmap downscale; SMAA stays last.
  */
 
@@ -38,6 +41,7 @@ const CA_OFFSET = new Vector2(0.0006, 0.0006);
 export function Effects() {
   const quality = useExperience((s) => s.quality);
   const tier = TIERS[quality];
+  const aoRef = useRef<N8AOPostPass>(null);
   const dofRef = useRef<DepthOfFieldEffect>(null);
 
   // Focal plane tracks the camera's authored look-target every frame.
@@ -46,15 +50,30 @@ export function Effects() {
     if (dof && dof.target) dof.target.copy(focusTarget);
   });
 
-  // Gate DOF without remounting the composer: SKIP = no contribution + no pass
-  // churn (one brief recompile on the rare tier change).
+  // Apply tier gates for the expensive passes (low-frequency, on tier change).
   useEffect(() => {
+    if (aoRef.current) aoRef.current.enabled = tier.ao;
     const dof = dofRef.current;
     if (dof) dof.blendMode.blendFunction = tier.dof ? BlendFunction.NORMAL : BlendFunction.SKIP;
   }, [tier]);
 
   return (
     <EffectComposer multisampling={0}>
+      {/* Ambient occlusion — crevice/contact depth. FULL tier only (the prior
+          44fps regression); these low-cost params + halfRes are the gate. The
+          Iris Xe seeds to `reduced`, so this pass is disabled there by default. */}
+      <N8AO
+        ref={aoRef}
+        halfRes
+        quality="low"
+        aoSamples={8}
+        denoiseSamples={4}
+        denoiseRadius={6}
+        aoRadius={1.6}
+        distanceFalloff={0.8}
+        intensity={1.1}
+        color="#05070d"
+      />
       {/* Cinematic focus — the framed subject is sharp, foreground/far fall to
           bokeh. resolutionScale 0.5: the bokeh blur is the cost. */}
       <DepthOfField
