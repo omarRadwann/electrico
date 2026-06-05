@@ -79,8 +79,8 @@ export function Effects() {
       <DepthOfField
         ref={dofRef}
         target={focusTarget}
-        worldFocusRange={5}
-        bokehScale={2.5}
+        worldFocusRange={11}
+        bokehScale={2.2}
         resolutionScale={0.5}
       />
       {/* Bright-only bloom — only true light sources glow, not the whole frame. */}

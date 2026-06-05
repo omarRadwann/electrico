@@ -17,6 +17,7 @@ import { AmbientDebris } from "./AmbientDebris";
 import { CityScene } from "./scenes/CityScene";
 import { CityLife } from "./scenes/CityLife";
 import { BuildingScene } from "./scenes/BuildingScene";
+import { BuildingSite } from "./scenes/BuildingSite";
 import { FrameScene } from "./scenes/FrameScene";
 import { FrameSurge } from "./scenes/FrameSurge";
 import { RoomScene } from "./scenes/RoomScene";
@@ -65,6 +66,7 @@ export function Experience() {
             <CityScene />
             <CityLife />
             <BuildingScene />
+            <BuildingSite />
             <FrameScene />
             <FrameSurge />
             <RoomScene />

@@ -25,12 +25,17 @@ export interface TierConfig {
   /** Environment IBL intensity (Lightformers need ~0.5 to register). */
   envIntensity: number;
   anisotropy: number;
+  /** Dense recognizable iconography (full + reduced). Hero icons always render. */
+  props: boolean;
+  /** Expensive extras — shadow-casting work lights, secondary particle layer,
+   *  power-line tubes, blueprint edge-glow (full tier only). */
+  heavyProps: boolean;
 }
 
 export const TIERS: Record<QualityTier, TierConfig> = {
-  full: { dprMax: 2, dof: true, ao: true, grain: true, ca: true, lut: true, reflectorRes: 128, shadowMapSize: 1024, envIntensity: 0.42, anisotropy: 8 },
-  reduced: { dprMax: 1.5, dof: true, ao: false, grain: true, ca: true, lut: false, reflectorRes: 64, shadowMapSize: 512, envIntensity: 0.38, anisotropy: 4 },
-  minimal: { dprMax: 1, dof: false, ao: false, grain: false, ca: false, lut: false, reflectorRes: 0, shadowMapSize: 512, envIntensity: 0.3, anisotropy: 1 },
+  full: { dprMax: 2, dof: true, ao: true, grain: true, ca: true, lut: true, reflectorRes: 128, shadowMapSize: 1024, envIntensity: 0.42, anisotropy: 8, props: true, heavyProps: true },
+  reduced: { dprMax: 1.5, dof: true, ao: false, grain: true, ca: true, lut: false, reflectorRes: 64, shadowMapSize: 512, envIntensity: 0.38, anisotropy: 4, props: true, heavyProps: false },
+  minimal: { dprMax: 1, dof: false, ao: false, grain: false, ca: false, lut: false, reflectorRes: 0, shadowMapSize: 512, envIntensity: 0.3, anisotropy: 1, props: false, heavyProps: false },
 };
 
 const ORDER: QualityTier[] = ["minimal", "reduced", "full"];
