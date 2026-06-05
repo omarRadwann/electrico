@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { asset } from "@/src/lib/asset";
 
 // Display + body face placeholder (a variable grotesk) until <<FONT>> is
 // confirmed. next/font self-hosts these at build time; Geist is OFL-licensed.
@@ -30,22 +31,22 @@ export const metadata: Metadata = {
     "home automation",
     "wiring and maintenance",
   ],
-  alternates: { canonical: "/" },
+  alternates: { canonical: asset("/") },
   openGraph: {
     title: "ELECTRICO",
     description:
       "We light the city, raise its structures, make it think, and keep its current alive.",
     type: "website",
     siteName: "ELECTRICO",
-    url: "/",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "ELECTRICO — power, structure, smart systems" }],
+    url: asset("/"),
+    images: [{ url: asset("/og.png"), width: 1200, height: 630, alt: "ELECTRICO — power, structure, smart systems" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "ELECTRICO",
     description:
       "We light the city, raise its structures, make it think, and keep its current alive.",
-    images: ["/og.png"],
+    images: [asset("/og.png")],
   },
   robots: { index: true, follow: true },
 };

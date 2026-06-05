@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
 import { ZONES } from "../cameraPath";
 import { useSurfaceMaps } from "../useSurfaceMaps";
+import { asset } from "@/src/lib/asset";
 
 /**
  * Dimension 2 — The Building (spec §7): approaching, architectural, grounded.
@@ -61,8 +62,8 @@ export function BuildingScene() {
   const crownMat = useRef<THREE.MeshStandardMaterial>(null);
   // Concrete relief on the solid masses so they catch light as real surfaces.
   const concrete = useSurfaceMaps(
-    "/textures/concrete_nor_gl_1k.jpg",
-    "/textures/concrete_rough_1k.jpg",
+    asset("/textures/concrete_nor_gl_1k.jpg"),
+    asset("/textures/concrete_rough_1k.jpg"),
     3,
     4,
   );

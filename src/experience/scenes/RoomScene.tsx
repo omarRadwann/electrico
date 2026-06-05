@@ -3,6 +3,7 @@ import { useGLTF } from "@react-three/drei";
 import { useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
 import { ZONES } from "../cameraPath";
+import { asset } from "@/src/lib/asset";
 
 /**
  * Dimension 4 — The Smart Living Room (spec §7): warm, human, intelligent. A
@@ -39,9 +40,15 @@ const UI_COUNT = UI_COLS * UI_ROWS;
 const LAMP_X = A.x + 3;
 const LAMP_Z = A.z - 3;
 
-useGLTF.preload("/models/sofa/Sofa_01_1k.gltf");
-useGLTF.preload("/models/coffeetable/CoffeeTable_01_1k.gltf");
-useGLTF.preload("/models/armchair/ArmChair_01_1k.gltf");
+// Model URLs prefixed with the deploy base path (GH Pages subpath) — raw loader
+// URLs aren't auto-prefixed by Next, so they'd 404 under /electrico otherwise.
+const SOFA_URL = asset("/models/sofa/Sofa_01_1k.gltf");
+const TABLE_URL = asset("/models/coffeetable/CoffeeTable_01_1k.gltf");
+const CHAIR_URL = asset("/models/armchair/ArmChair_01_1k.gltf");
+
+useGLTF.preload(SOFA_URL);
+useGLTF.preload(TABLE_URL);
+useGLTF.preload(CHAIR_URL);
 
 function enableShadows(root: THREE.Object3D) {
   root.traverse((o) => {
@@ -56,9 +63,9 @@ function enableShadows(root: THREE.Object3D) {
 export function RoomScene() {
   // Real CC0 furniture (Poly Haven) replacing the boxes. Suspends while loading
   // (see the <Suspense> wrap in Experience). Traverse once for shadow cast/receive.
-  const { scene: sofa } = useGLTF("/models/sofa/Sofa_01_1k.gltf");
-  const { scene: table } = useGLTF("/models/coffeetable/CoffeeTable_01_1k.gltf");
-  const { scene: chair } = useGLTF("/models/armchair/ArmChair_01_1k.gltf");
+  const { scene: sofa } = useGLTF(SOFA_URL);
+  const { scene: table } = useGLTF(TABLE_URL);
+  const { scene: chair } = useGLTF(CHAIR_URL);
   const uiRef = useRef<THREE.InstancedMesh>(null);
   useLayoutEffect(() => {
     enableShadows(sofa);

@@ -3,6 +3,7 @@
 import { Environment, Lightformer } from "@react-three/drei";
 import { useExperience } from "@/src/store/useExperience";
 import { TIERS } from "./quality";
+import { asset } from "@/src/lib/asset";
 
 /**
  * World lighting: a low cool directional key + a night HDRI for image-based
@@ -19,7 +20,7 @@ export function Lighting() {
       <ambientLight intensity={0.3} />
       <directionalLight position={[6, 10, 4]} intensity={1.1} color="#cdd6ff" />
       <Environment
-        files="/hdri/dikhololo_night_1k.hdr"
+        files={asset("/hdri/dikhololo_night_1k.hdr")}
         environmentIntensity={envIntensity}
         background={false}
       >

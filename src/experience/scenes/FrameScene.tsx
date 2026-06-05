@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
 import { ZONES } from "../cameraPath";
 import { useSurfaceMaps } from "../useSurfaceMaps";
+import { asset } from "@/src/lib/asset";
 
 /**
  * Dimension 3 — The Steel Frame (spec §7): the hidden order beneath the surface.
@@ -36,8 +37,8 @@ export function FrameScene() {
   const boltsRef = useRef<THREE.InstancedMesh>(null);
   // Brushed-metal relief on the steel between the glowing emissive.
   const metal = useSurfaceMaps(
-    "/textures/metal_nor_gl_1k.jpg",
-    "/textures/metal_rough_1k.jpg",
+    asset("/textures/metal_nor_gl_1k.jpg"),
+    asset("/textures/metal_rough_1k.jpg"),
     1,
     2,
   );
