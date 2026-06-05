@@ -1,6 +1,6 @@
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
 import { ZONES } from "../cameraPath";
 
@@ -25,6 +25,13 @@ const LAMP = new THREE.MeshStandardMaterial({
 const DEVICE = new THREE.MeshStandardMaterial({
   color: "#08302f", emissive: "#43d0c4", emissiveIntensity: 1.6, toneMapped: false, roughness: 0.4,
 });
+
+// Smart control-panel UI — an animated grid of "buttons" on the wall screen.
+const UI_TEAL = new THREE.Color("#43d0c4");
+const _uiCol = new THREE.Color();
+const UI_COLS = 5;
+const UI_ROWS = 3;
+const UI_COUNT = UI_COLS * UI_ROWS;
 
 // Lamp sits ON the framed furniture cluster (the camera's Room arrival key looks
 // at ≈(-2,-5,-139)) so its glow + cast shadow land on the sofa/table, not on the
@@ -52,14 +59,47 @@ export function RoomScene() {
   const { scene: sofa } = useGLTF("/models/sofa/Sofa_01_1k.gltf");
   const { scene: table } = useGLTF("/models/coffeetable/CoffeeTable_01_1k.gltf");
   const { scene: chair } = useGLTF("/models/armchair/ArmChair_01_1k.gltf");
+  const uiRef = useRef<THREE.InstancedMesh>(null);
   useLayoutEffect(() => {
     enableShadows(sofa);
     enableShadows(table);
     enableShadows(chair);
   }, [sofa, table, chair]);
 
+  // Lay out the wall-panel UI button grid (on the panel's +z face).
+  useLayoutEffect(() => {
+    const ui = uiRef.current;
+    if (!ui) return;
+    const o = new THREE.Object3D();
+    let i = 0;
+    for (let r = 0; r < UI_ROWS; r++) {
+      for (let c = 0; c < UI_COLS; c++) {
+        o.position.set(
+          A.x + (c / (UI_COLS - 1) - 0.5) * 2.4,
+          FLOOR_Y + 7 + (r / (UI_ROWS - 1) - 0.5) * 1.1,
+          A.z - 13.6 + 0.1,
+        );
+        o.scale.set(0.32, 0.26, 0.05);
+        o.updateMatrix();
+        ui.setMatrixAt(i++, o.matrix);
+      }
+    }
+    ui.instanceMatrix.needsUpdate = true;
+  }, []);
+
   useFrame((s) => {
-    DEVICE.emissiveIntensity = 0.9 + 0.8 * (0.5 + 0.5 * Math.sin(s.clock.elapsedTime * 1.2));
+    const t = s.clock.elapsedTime;
+    DEVICE.emissiveIntensity = 0.9 + 0.8 * (0.5 + 0.5 * Math.sin(t * 1.2));
+    // The home "thinks" — a column-scan of brightness sweeps the panel buttons.
+    const ui = uiRef.current;
+    if (ui && ui.instanceColor) {
+      for (let i = 0; i < UI_COUNT; i++) {
+        const b = Math.pow(0.5 + 0.5 * Math.sin(t * 2.2 - (i % UI_COLS) * 0.9), 3);
+        _uiCol.copy(UI_TEAL).multiplyScalar(0.35 + b * 2.4);
+        ui.setColorAt(i, _uiCol);
+      }
+      ui.instanceColor.needsUpdate = true;
+    }
   });
 
   return (
@@ -120,6 +160,19 @@ export function RoomScene() {
       <mesh position={[LAMP_X, FLOOR_Y + 0.3, LAMP_Z + 1.5]} material={DEVICE} castShadow>
         <boxGeometry args={[0.35, 0.35, 0.35]} />
       </mesh>
+
+      {/* Smart hub / speaker in the cluster — a glowing teal ring (the home's voice). */}
+      <mesh position={[A.x - 1, FLOOR_Y + 0.5, A.z]} material={WOOD}>
+        <cylinderGeometry args={[0.42, 0.5, 1, 18]} />
+      </mesh>
+      <mesh position={[A.x - 1, FLOOR_Y + 1.02, A.z]} rotation={[Math.PI / 2, 0, 0]} material={DEVICE}>
+        <torusGeometry args={[0.38, 0.09, 10, 24]} />
+      </mesh>
+      {/* Animated control-panel UI on the wall screen — the home "thinking". */}
+      <instancedMesh ref={uiRef} args={[undefined, undefined, UI_COUNT]} frustumCulled={false}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshBasicMaterial toneMapped={false} />
+      </instancedMesh>
     </group>
   );
 }
