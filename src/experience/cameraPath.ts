@@ -181,6 +181,15 @@ export function sampleCamera(p: number, outPos: THREE.Vector3, outLook: THREE.Ve
   hermite(outLook, k0.lookAt, k1.lookAt, _m0l, _m1l, t);
 }
 
+/**
+ * The camera's current look-target, written by the Rig each frame (= the authored
+ * `lookAt` for this progress). Depth of field reads it so the focal plane sits on
+ * whatever the camera is framing — never blurring the whole moving frame. Shared
+ * module-scope instance (mutated, never reassigned) so it's allocation-free across
+ * the Rig → Effects boundary.
+ */
+export const focusTarget = new THREE.Vector3(0, 0, -10);
+
 // --- Boundary / transition math (spec §3.2: the "moment of impact") ---------
 
 /**

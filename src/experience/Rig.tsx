@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useExperience } from "@/src/store/useExperience";
 import { clamp } from "@/src/lib/math";
-import { sampleCamera, ZONE_PROGRESS, boundaryPulse } from "./cameraPath";
+import { sampleCamera, focusTarget, ZONE_PROGRESS, boundaryPulse } from "./cameraPath";
 
 // Reusable temporaries — never allocate inside useFrame (spec §10 perf discipline).
 const _pos = new THREE.Vector3();
@@ -57,6 +57,9 @@ export function Rig() {
 
     // Authored position + look-at target for this progress (no tangent swing).
     sampleCamera(p, _pos, _look);
+    // Hand the look-target to depth-of-field so the focal plane tracks the framed
+    // subject (the Effects DOF pass reads this each frame).
+    focusTarget.copy(_look);
 
     // Mouse parallax: a SUBTLE positional lean toward the cursor (damped) for
     // hand-held life. Position-only — the authored look target is NOT offset, so

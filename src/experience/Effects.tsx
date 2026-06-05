@@ -1,5 +1,6 @@
 import {
   EffectComposer,
+  DepthOfField,
   Bloom,
   Vignette,
   HueSaturation,
@@ -8,26 +9,28 @@ import {
   Noise,
   SMAA,
 } from "@react-three/postprocessing";
-import { BlendFunction } from "postprocessing";
+import { BlendFunction, DepthOfFieldEffect } from "postprocessing";
 import { Vector2 } from "three";
+import { useEffect, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import { useExperience } from "@/src/store/useExperience";
 import { TIERS } from "./quality";
+import { focusTarget } from "./cameraPath";
 
 /**
  * Postprocessing stack — the cinematic layer (spec §5/§6). Bloom is essential
  * (the glow is what makes the energy read as *alive*); on top of it a filmic
- * grade gives the "premium render" feel: AgX tone curve (createRenderer), a
- * subtle desaturate + contrast, a whisper of chromatic aberration, fine film
- * grain. Depth of field + ambient occlusion + the LUT grade arrive in later
- * steps; they (and grain/CA) are gated by the quality tier.
+ * grade (AgX tone curve in createRenderer + this chain) gives the "premium
+ * render" feel: depth-of-field focus on the framed subject, a subtle desaturate +
+ * contrast, a whisper of chromatic aberration, fine film grain.
  *
- * Tier gating uses each effect's blend OPACITY (a uniform applied to the existing
- * effect via R3F's `blendMode-opacity-value`) — opacity 0 disables the effect
- * with NO recreation/recompile/flash. `quality` is low-frequency, so subscribing
- * via the hook selector here is correct (a handful of re-renders per session).
+ * Tier gating: the cheap effects (grain, CA) disable via blend OPACITY (a uniform
+ * on the existing effect — no recreation/flash). The expensive DOF disables via
+ * blendFunction SKIP through a ref (no pass-list churn; one brief recompile on the
+ * rare tier change). `quality` is low-frequency, so subscribing here is correct.
  *
- * - multisampling=0: MSAA collides with bloom's mipmap downscale; SMAA does the
- *   edge cleanup as a post pass and MUST stay last.
+ * - DOF runs FIRST so bloom blooms the bokeh discs (the soft-glowing-orbs look).
+ * - multisampling=0: MSAA collides with bloom's mipmap downscale; SMAA stays last.
  */
 
 const CA_OFFSET = new Vector2(0.0006, 0.0006);
@@ -35,9 +38,32 @@ const CA_OFFSET = new Vector2(0.0006, 0.0006);
 export function Effects() {
   const quality = useExperience((s) => s.quality);
   const tier = TIERS[quality];
+  const dofRef = useRef<DepthOfFieldEffect>(null);
+
+  // Focal plane tracks the camera's authored look-target every frame.
+  useFrame(() => {
+    const dof = dofRef.current;
+    if (dof && dof.target) dof.target.copy(focusTarget);
+  });
+
+  // Gate DOF without remounting the composer: SKIP = no contribution + no pass
+  // churn (one brief recompile on the rare tier change).
+  useEffect(() => {
+    const dof = dofRef.current;
+    if (dof) dof.blendMode.blendFunction = tier.dof ? BlendFunction.NORMAL : BlendFunction.SKIP;
+  }, [tier]);
 
   return (
     <EffectComposer multisampling={0}>
+      {/* Cinematic focus — the framed subject is sharp, foreground/far fall to
+          bokeh. resolutionScale 0.5: the bokeh blur is the cost. */}
+      <DepthOfField
+        ref={dofRef}
+        target={focusTarget}
+        worldFocusRange={5}
+        bokehScale={2.5}
+        resolutionScale={0.5}
+      />
       {/* Bright-only bloom — only true light sources glow, not the whole frame. */}
       <Bloom
         luminanceThreshold={0.42}
