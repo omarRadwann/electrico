@@ -1,4 +1,5 @@
 import { Experience } from "@/src/experience/Experience";
+import { ExperienceBoundary } from "@/src/ui/ExperienceBoundary";
 
 /**
  * Landing route. The 3D dive (<Experience/>) is a fixed client island behind
@@ -11,9 +12,11 @@ import { Experience } from "@/src/experience/Experience";
 export default function Home() {
   return (
     <>
-      <Experience />
+      <ExperienceBoundary>
+        <Experience />
+      </ExperienceBoundary>
 
-      <main className="content">
+      <main className="content" id="content">
         <section className="content-section">
           <p className="eyebrow">Power · Structure · Smart systems</p>
           <h1 className="brandmark">ELECTRICO</h1>

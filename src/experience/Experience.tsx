@@ -42,7 +42,7 @@ export function Experience() {
 
   return (
     <>
-      <div className="experience-root">
+      <div className="experience-root" aria-hidden="true">
         <Canvas
           gl={createRenderer}
           dpr={[1, 2]}

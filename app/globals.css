@@ -64,6 +64,41 @@ a {
   text-decoration: none;
 }
 
+/* Keyboard skip-link — visually hidden until focused, then drops into view. */
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 1rem;
+  z-index: 200;
+  padding: 0.7rem 1.1rem;
+  background: var(--amber);
+  color: var(--bg-night);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  pointer-events: auto;
+  transition: top 0.2s ease;
+}
+.skip-link:focus {
+  top: 1rem;
+  outline: 2px solid var(--fg);
+}
+
+/* No-JS fallback banner (the crawlable content still renders below it). */
+.noscript-fallback {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 200;
+  padding: 1rem 1.25rem;
+  background: #0b0f18;
+  border-bottom: 1px solid rgba(232, 162, 61, 0.4);
+  color: var(--fg);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 /* ----------------------------------------------------------------------------
    The 3D experience sits fixed behind the scrollable, crawlable content.
    Lenis drives real (untransformed) scroll, so `position: fixed` is safe here.
