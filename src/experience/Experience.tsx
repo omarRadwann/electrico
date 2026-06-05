@@ -18,6 +18,7 @@ import { CityScene } from "./scenes/CityScene";
 import { CityLife } from "./scenes/CityLife";
 import { BuildingScene } from "./scenes/BuildingScene";
 import { FrameScene } from "./scenes/FrameScene";
+import { FrameSurge } from "./scenes/FrameSurge";
 import { RoomScene } from "./scenes/RoomScene";
 import { WiringScene } from "./scenes/WiringScene";
 import { CurrentScene } from "./scenes/CurrentScene";
@@ -65,6 +66,7 @@ export function Experience() {
             <CityLife />
             <BuildingScene />
             <FrameScene />
+            <FrameSurge />
             <RoomScene />
             <WiringScene />
             <CurrentScene />
