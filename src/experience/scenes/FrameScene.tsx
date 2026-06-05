@@ -33,6 +33,7 @@ const _X = new THREE.Vector3(1, 0, 0);
 export function FrameScene() {
   const ref = useRef<THREE.InstancedMesh>(null);
   const matRef = useRef<THREE.MeshStandardMaterial>(null);
+  const boltsRef = useRef<THREE.InstancedMesh>(null);
   // Brushed-metal relief on the steel between the glowing emissive.
   const metal = useSurfaceMaps(
     "/textures/metal_nor_gl_1k.jpg",
@@ -109,6 +110,28 @@ export function FrameScene() {
 
     mesh.count = i;
     mesh.instanceMatrix.needsUpdate = true;
+
+    // Bolt / gusset studs at the column–ring joints — engineering craft detail.
+    const bolts = boltsRef.current;
+    if (bolts) {
+      let bj = 0;
+      for (const zc of BAY_Z) {
+        const cx = [A.x - S, A.x + S, A.x + S, A.x - S];
+        const cz = [zc - S, zc - S, zc + S, zc + S];
+        for (let l = 0; l < LEVELS; l++) {
+          const y = yBot + (l / (LEVELS - 1)) * H;
+          for (let k = 0; k < 4; k++) {
+            dummy.position.set(cx[k], y, cz[k]);
+            dummy.quaternion.identity();
+            dummy.scale.setScalar(0.28);
+            dummy.updateMatrix();
+            bolts.setMatrixAt(bj++, dummy.matrix);
+          }
+        }
+      }
+      bolts.count = bj;
+      bolts.instanceMatrix.needsUpdate = true;
+    }
   }, []);
 
   useFrame((s) => {
@@ -120,19 +143,26 @@ export function FrameScene() {
   });
 
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, MAX_BEAMS]} frustumCulled={false}>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial
-        ref={matRef}
-        color="#586273"
-        emissive="#4d74c8"
-        emissiveIntensity={0.7}
-        toneMapped={false}
-        roughness={0.3}
-        metalness={0.9}
-        normalMap={metal.normalMap}
-        roughnessMap={metal.roughnessMap}
-      />
-    </instancedMesh>
+    <group>
+      <instancedMesh ref={ref} args={[undefined, undefined, MAX_BEAMS]} frustumCulled={false}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial
+          ref={matRef}
+          color="#586273"
+          emissive="#4d74c8"
+          emissiveIntensity={0.7}
+          toneMapped={false}
+          roughness={0.3}
+          metalness={0.9}
+          normalMap={metal.normalMap}
+          roughnessMap={metal.roughnessMap}
+        />
+      </instancedMesh>
+      {/* Bolt / gusset studs at the joints — engineering craft (glint the blue glow). */}
+      <instancedMesh ref={boltsRef} args={[undefined, undefined, 48]} frustumCulled={false}>
+        <sphereGeometry args={[1, 8, 8]} />
+        <meshStandardMaterial color="#8893a6" emissive="#4d74c8" emissiveIntensity={0.5} metalness={0.9} roughness={0.4} toneMapped={false} />
+      </instancedMesh>
+    </group>
   );
 }
