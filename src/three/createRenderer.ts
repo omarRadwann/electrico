@@ -29,7 +29,12 @@ export function createRenderer(
   // keeps the factory correct if ever used outside R3F.
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  // AgX (three r160+) gives a more filmic, gently-desaturated highlight rolloff
+  // than ACES — the modern "premium render" curve. It only shapes NON-emissive
+  // surfaces; the glow materials are `toneMapped:false`, so the amber/teal/copper
+  // light sources stay punchy and bloom as tuned. (sRGB OETF still applied at
+  // output — tone curve and colour-space encode are separate stages.)
+  renderer.toneMapping = THREE.AgXToneMapping;
   // Soft shadow maps, used selectively (only the Room's lamp casts) for grounded
   // realism without the cost of shadowing all six dimensions.
   renderer.shadowMap.enabled = true;
