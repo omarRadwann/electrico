@@ -1,8 +1,8 @@
 "use client";
 
-import { Environment, Lightformer } from "@react-three/drei";
+import { Environment, Lightformer, useProgress } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useExperience } from "@/src/store/useExperience";
 import { TIERS } from "./quality";
@@ -21,13 +21,33 @@ export function Lighting() {
   const dirRef = useRef<THREE.DirectionalLight>(null);
   const warmup = useRef(0);
 
-  // PERF: the moon-key shadow covers the whole (static) dive corridor. Let it
-  // render for a short warmup (so all Suspense-mounted scenes land in the depth
-  // map), then FREEZE it (autoUpdate=false) — nothing in the world moves, so a
-  // per-frame full-corridor shadow re-render is pure waste. Full tier only.
+  // The freeze is driven by LOAD COMPLETION, not frames-since-mount: scene GLBs
+  // arrive via Suspense long after this component mounts, so a mount-counted
+  // freeze locks an EMPTY depth map on real networks (full-tier visitors would
+  // get zero directional shadows). drei's useProgress is the global loader
+  // state — low-frequency, safe to subscribe.
+  const { active, progress } = useProgress();
+  const loaded = !active && progress === 100;
+
+  // RE-ARM whenever loading resumes (a late GLB, a tier-driven texture swap):
+  // unfreeze + restart the warmup so the new geometry lands in the depth map.
+  useEffect(() => {
+    if (loaded) return;
+    warmup.current = 0;
+    const d = dirRef.current;
+    if (d && !d.shadow.autoUpdate) d.shadow.autoUpdate = true;
+  }, [loaded]);
+
+  // PERF: the moon-key shadow covers the whole (static) dive corridor. Once all
+  // assets have landed, render the depth map for a short warmup (a few frames so
+  // every Suspense-mounted scene is committed to the GPU), then FREEZE it
+  // (autoUpdate=false) — nothing in the world moves, so a per-frame
+  // full-corridor shadow re-render is pure waste. Full tier only (castShadow
+  // follows heavyProps below). If nothing ever loads, the shadow simply stays
+  // live — the safe failure direction.
   useFrame(() => {
     const d = dirRef.current;
-    if (!d || !tier.heavyProps) return;
+    if (!d || !tier.heavyProps || !loaded) return;
     if (warmup.current < 12) warmup.current += 1;
     else if (d.shadow.autoUpdate) d.shadow.autoUpdate = false;
   });

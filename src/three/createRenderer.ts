@@ -29,6 +29,15 @@ export function createRenderer(
   // keeps the factory correct if ever used outside R3F.
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  // LIBRARY-BOUNDARY GOTCHA (verified in @react-three/fiber 9.6 dist): R3F's
+  // configure() runs AFTER this factory returns and OVERRIDES two settings —
+  //   - toneMapping → ACESFilmic (no `flat` prop on <Canvas>), and
+  //   - shadowMap.enabled/type → from the Canvas `shadows` prop.
+  // The values below are therefore the factory's *intent*, re-asserted in the
+  // Canvas `onCreated` callback (Experience.tsx), which runs after configure().
+  // Keep both in sync: this factory stays correct standalone (outside R3F), and
+  // onCreated makes it correct inside R3F.
+  //
   // AgX (three r160+) gives a more filmic, gently-desaturated highlight rolloff
   // than ACES — the modern "premium render" curve. It only shapes NON-emissive
   // surfaces; the glow materials are `toneMapped:false`, so the amber/teal/copper
@@ -41,7 +50,9 @@ export function createRenderer(
   // single de-wash lever.
   renderer.toneMappingExposure = 0.8;
   // Soft shadow maps, used selectively (only the Room's lamp casts) for grounded
-  // realism without the cost of shadowing all six dimensions.
+  // realism without the cost of shadowing all six dimensions. Inside R3F this is
+  // only LIVE because <Canvas shadows> is set — configure() does
+  // `shadowMap.enabled = !!shadows` and would dead-switch it otherwise.
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 

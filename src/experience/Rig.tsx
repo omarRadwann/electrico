@@ -3,11 +3,26 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useExperience } from "@/src/store/useExperience";
 import { clamp } from "@/src/lib/math";
-import { sampleCamera, focusTarget, ZONE_PROGRESS, boundaryPulse } from "./cameraPath";
+import {
+  sampleCamera,
+  focusTarget,
+  ZONE_PROGRESS,
+  BOUNDARY_PROGRESS,
+  boundaryPulse,
+} from "./cameraPath";
 
 // Reusable temporaries — never allocate inside useFrame (spec §10 perf discipline).
 const _pos = new THREE.Vector3();
 const _look = new THREE.Vector3();
+
+// VELOCITY LANGUAGE — the lens stretches with scroll speed (55° → up to 60°),
+// so a committed flick *feels* faster without touching the authored path.
+// FOV_VELOCITY_K is sized so a hard flick (Lenis |velocity| ≈ 25+) reaches the
+// full stretch while a reading-pace creep (~2) barely registers. Tune the K on
+// a real-GPU run, not by eye in the preview tab.
+const FOV_BASE = 55;
+const FOV_STRETCH_MAX = 5;
+const FOV_VELOCITY_K = 0.2;
 
 /**
  * The single camera (spec §3.1). It does not jump between sections — scroll
@@ -22,6 +37,12 @@ export function Rig() {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
   const damped = useRef(0);
+  // Previous frame's DAMPED progress — the edge detector for boundary events
+  // (the camera's actual crossing, not the raw scrollbar's).
+  const prevDamped = useRef(0);
+  // Smoothed FOV state (velocity stretch); projection matrix rebuilt only on
+  // real change (>0.01°) — updateProjectionMatrix every frame is wasted work.
+  const fov = useRef(FOV_BASE);
   const pMouse = useRef({ x: 0, y: 0 });
 
   // Dev-only: expose the live camera + renderer so a real (non-hidden) browser
@@ -38,12 +59,19 @@ export function Rig() {
   }, [camera, gl]);
 
   useFrame((state, dt) => {
-    const target = useExperience.getState().progress;
+    const st = useExperience.getState();
+    const target = st.progress;
 
     // Endless-loop wrap: when progress jumps across the seam (e.g. ~1 -> ~0),
     // SNAP instead of damping — damping would reverse-fly the whole dive. The
     // LoopVeil masks the snap so it reads as a seamless loop (spec §3.2).
+    let snapped = false;
     if (Math.abs(target - damped.current) > 0.5) {
+      damped.current = target;
+      snapped = true;
+    } else if (st.reducedMotion) {
+      // Reduced motion: track the scroll 1:1 — no inertia, no overshoot, and no
+      // boundary damping-kick. The visitor's input maps directly to position.
       damped.current = target;
     } else {
       // Critical-damping on top of Lenis' inertia gives the camera *weight*: it
@@ -54,6 +82,29 @@ export function Rig() {
       damped.current = THREE.MathUtils.damp(damped.current, target, 3.5 + kick * 6, dt);
     }
     const p = clamp(damped.current, 0, 1);
+
+    // BOUNDARY EVENTS — edge-detect the DAMPED progress crossing each boundary.
+    // This is the single source of truth every transition surface consumes
+    // (flash, CA kick, audio stingers): one event per crossing, stamped with
+    // time/velocity/direction. A store write inside useFrame is DELIBERATE here
+    // and acceptable: crossings are rare (≤5 per pass), not per-frame. Loop-seam
+    // snaps are excluded — a snap "crosses" every boundary but is not an impact.
+    if (!snapped) {
+      const prev = prevDamped.current;
+      for (let i = 0; i < BOUNDARY_PROGRESS.length; i++) {
+        const b = BOUNDARY_PROGRESS[i];
+        const fwd = prev < b && p >= b;
+        if (fwd || (prev > b && p <= b)) {
+          st.setLastBoundary({
+            index: i,
+            at: performance.now(),
+            velocity: Math.abs(st.velocity),
+            direction: fwd ? 1 : -1,
+          });
+        }
+      }
+    }
+    prevDamped.current = p;
 
     // Authored position + look-at target for this progress (no tangent swing).
     sampleCamera(p, _pos, _look);
@@ -73,6 +124,22 @@ export function Rig() {
       _pos.z,
     );
     camera.lookAt(_look);
+
+    // Velocity → FOV stretch (smoothed, clamped). Skipped under reduced motion:
+    // a widening lens is exactly the class of motion that path opts out of.
+    // (Camera read from the frame state, not the hook value — property writes on
+    // hook-returned objects trip react-hooks/immutability; same object either way.)
+    const cam = state.camera as THREE.PerspectiveCamera;
+    if (cam.isPerspectiveCamera) {
+      const fovTarget = st.reducedMotion
+        ? FOV_BASE
+        : FOV_BASE + clamp(Math.abs(st.velocity) * FOV_VELOCITY_K, 0, FOV_STRETCH_MAX);
+      fov.current = THREE.MathUtils.damp(fov.current, fovTarget, 4, dt);
+      if (Math.abs(cam.fov - fov.current) > 0.01) {
+        cam.fov = fov.current;
+        cam.updateProjectionMatrix();
+      }
+    }
 
     // Active dimension = the arrival key the scroll is nearest (in progress).
     // progress-based now that position is authored (the start key sits at z≈6,

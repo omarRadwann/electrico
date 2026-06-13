@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
 import { PerformanceMonitor } from "@react-three/drei";
 import { useExperience, type QualityTier } from "@/src/store/useExperience";
+import { clamp } from "@/src/lib/math";
 
 /**
  * Adaptive quality tiers (spec §8 / M7). The cinematic effects (DOF, AO) are too
@@ -15,17 +16,23 @@ import { useExperience, type QualityTier } from "@/src/store/useExperience";
 export interface TierConfig {
   dprMax: number;
   dof: boolean;
+  /** N8AO is conditionally MOUNTED on this flag (not just .enabled-toggled) —
+   *  its render targets allocate VRAM at construction, which phones never get back. */
   ao: boolean;
   grain: boolean;
   ca: boolean;
-  lut: boolean;
   /** MeshReflectorMaterial resolution; 0 disables the reflective ground. */
   reflectorRes: number;
   shadowMapSize: number;
-  /** Environment IBL intensity (Lightformers need ~0.5 to register). */
+  /** Environment IBL intensity — high enough that the Lightformer speculars and
+   *  the tiling surface maps actually MODEL surfaces (the old 0.16/0.14/0.11
+   *  starved the IBL into invisibility once emissives stopped carrying frames). */
   envIntensity: number;
+  /** Texture anisotropy, wired through useSurfaceMaps (was a dead knob). */
   anisotropy: number;
-  /** Dense recognizable iconography (full + reduced). Hero icons always render. */
+  /** Silhouette-critical iconography (substations, pylons, work lights) — ON for
+   *  EVERY tier. Minimal means simpler-premium, not empty: these are what make
+   *  each dimension READ as its service. */
   props: boolean;
   /** Expensive extras — shadow-casting work lights, secondary particle layer,
    *  power-line tubes, blueprint edge-glow (full tier only). */
@@ -33,9 +40,9 @@ export interface TierConfig {
 }
 
 export const TIERS: Record<QualityTier, TierConfig> = {
-  full: { dprMax: 2, dof: true, ao: true, grain: true, ca: true, lut: true, reflectorRes: 96, shadowMapSize: 1024, envIntensity: 0.16, anisotropy: 8, props: true, heavyProps: true },
-  reduced: { dprMax: 1.5, dof: true, ao: false, grain: true, ca: true, lut: false, reflectorRes: 0, shadowMapSize: 512, envIntensity: 0.14, anisotropy: 4, props: true, heavyProps: false },
-  minimal: { dprMax: 1, dof: false, ao: false, grain: false, ca: false, lut: false, reflectorRes: 0, shadowMapSize: 512, envIntensity: 0.11, anisotropy: 1, props: false, heavyProps: false },
+  full: { dprMax: 2, dof: true, ao: true, grain: true, ca: true, reflectorRes: 96, shadowMapSize: 1024, envIntensity: 0.34, anisotropy: 8, props: true, heavyProps: true },
+  reduced: { dprMax: 1.5, dof: true, ao: false, grain: true, ca: true, reflectorRes: 0, shadowMapSize: 512, envIntensity: 0.3, anisotropy: 4, props: true, heavyProps: false },
+  minimal: { dprMax: 1, dof: false, ao: false, grain: false, ca: false, reflectorRes: 0, shadowMapSize: 512, envIntensity: 0.24, anisotropy: 1, props: true, heavyProps: false },
 };
 
 const ORDER: QualityTier[] = ["minimal", "reduced", "full"];
@@ -44,9 +51,21 @@ const ORDER: QualityTier[] = ["minimal", "reduced", "full"];
 function seedFromGPU(name: string | null): QualityTier {
   if (!name) return "reduced";
   const r = name.toLowerCase();
+  // Safari (macOS 15+ AND all iOS) masks the renderer to literally "Apple GPU" —
+  // the string alone is NOT a mobile signal: an M3 Max in Safari reports the
+  // same as an iPhone. Disambiguate with form-factor signals: a non-touch,
+  // non-mobile-UA device claiming "Apple GPU" is desktop Apple silicon → full.
+  // (iPadOS masquerades as "Macintosh" in its UA but exposes maxTouchPoints > 0,
+  // so the touch check still routes genuine tablets to the mobile branch.)
+  if (/apple gpu/.test(r)) {
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    const touchPoints = typeof navigator !== "undefined" ? navigator.maxTouchPoints : 0;
+    if (!/iphone|ipad|android/i.test(ua) && touchPoints === 0) return "full";
+    return "minimal"; // genuine iPhone/iPad — keep the conservative mobile floor
+  }
   if (/apple m\d|nvidia|rtx|geforce|radeon|\brx\s?\d/.test(r)) return "full";
   if (/intel|iris|uhd|hd graphics/.test(r)) return "reduced"; // Iris Xe lands here → protects the 60fps floor
-  if (/mali|adreno|powervr|apple gpu/.test(r)) return "minimal";
+  if (/mali|adreno|powervr/.test(r)) return "minimal";
   return "reduced";
 }
 
@@ -108,6 +127,19 @@ export function QualityController() {
         if (st.reducedMotion) return;
         const i = ORDER.indexOf(st.quality);
         if (i > 0) st.setQuality(ORDER[i - 1]);
+      }}
+      onChange={({ factor }) => {
+        // BETWEEN-TIER FRACTIONAL DPR: degradation is a slope, not three cliffs.
+        // PerformanceMonitor's factor boots at 0.5 (neutral) and can never rise
+        // far on displays already pinned at their refresh rate — so factor ≥ 0.5
+        // maps to the tier's FULL cap (healthy machines are never degraded by
+        // the monitor merely existing), and only below-neutral factors slide
+        // DPR linearly toward the hard 1.0 floor before the next tier cliff.
+        const st = useExperience.getState();
+        const dpr = typeof window !== "undefined" ? window.devicePixelRatio : 1;
+        const cap = Math.min(dpr, TIERS[st.quality].dprMax);
+        const slope = clamp(factor / 0.5, 0, 1);
+        setDpr(clamp(1 + (cap - 1) * slope, 1, cap));
       }}
     />
   );

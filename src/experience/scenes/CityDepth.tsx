@@ -26,6 +26,17 @@ interface Far {
   h: number;
 }
 
+// Seeded LCG — deterministic far-skyline layout (matches the rest of the City so
+// a future pass can rhyme the Current→City match-cut). The ring sits at radius
+// 34–62, far lateral of the descent path; nothing here can touch the flight line.
+function makeRng(seed: number): () => number {
+  let s = seed >>> 0;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
 export function CityDepth() {
   const towersRef = useRef<THREE.InstancedMesh>(null);
   const winRef = useRef<THREE.InstancedMesh>(null);
@@ -34,19 +45,20 @@ export function CityDepth() {
     const towers = towersRef.current;
     const windows = winRef.current;
     if (!towers || !windows) return;
+    const rng = makeRng(0x33aa); // seeded — stable far skyline across reloads
     const dummy = new THREE.Object3D();
     const color = new THREE.Color();
     const placed: Far[] = [];
 
     // Ring the foreground grid: radius 34–62 around the anchor, full circle.
     for (let i = 0; i < FAR_TOWERS; i++) {
-      const ang = Math.random() * Math.PI * 2;
-      const rad = 34 + Math.random() * 28;
+      const ang = rng() * Math.PI * 2;
+      const rad = 34 + rng() * 28;
       const x = CITY.x + Math.cos(ang) * rad;
       const z = CITY.z + Math.sin(ang) * rad * 0.7; // squash z a touch (reads wider)
-      const w = 3 + Math.random() * 4;
-      const d = 3 + Math.random() * 4;
-      const h = 14 + Math.random() * 30; // taller than the foreground
+      const w = 3 + rng() * 4;
+      const d = 3 + rng() * 4;
+      const h = 14 + rng() * 30; // taller than the foreground
       dummy.position.set(x, GROUND_Y + h / 2, z);
       dummy.scale.set(w, h, d);
       dummy.rotation.set(0, 0, 0);
@@ -59,27 +71,27 @@ export function CityDepth() {
     // Sparse dim windows on the far towers (dimmer than the foreground — distance).
     for (let i = 0; i < FAR_WINDOWS; i++) {
       const t = placed[i % placed.length];
-      const yy = GROUND_Y + 1 + Math.random() * (t.h - 1.5);
-      const onX = Math.random() < 0.5;
-      const sign = Math.random() < 0.5 ? 1 : -1;
-      const ww = 0.22 + Math.random() * 0.18;
-      const wh = 0.34 + Math.random() * 0.3;
+      const yy = GROUND_Y + 1 + rng() * (t.h - 1.5);
+      const onX = rng() < 0.5;
+      const sign = rng() < 0.5 ? 1 : -1;
+      const ww = 0.22 + rng() * 0.18;
+      const wh = 0.34 + rng() * 0.3;
       let x: number;
       let z: number;
       if (onX) {
         x = t.x + sign * (t.w / 2);
-        z = t.z + (Math.random() - 0.5) * t.d * 0.8;
+        z = t.z + (rng() - 0.5) * t.d * 0.8;
         dummy.scale.set(0.08, wh, ww);
       } else {
         z = t.z + sign * (t.d / 2);
-        x = t.x + (Math.random() - 0.5) * t.w * 0.8;
+        x = t.x + (rng() - 0.5) * t.w * 0.8;
         dummy.scale.set(ww, wh, 0.08);
       }
       dummy.position.set(x, yy, z);
       dummy.updateMatrix();
       windows.setMatrixAt(i, dummy.matrix);
-      const on = Math.random() < 0.3 ? 0 : 0.12 + Math.random() * 0.5; // dim + many dark
-      color.copy(Math.random() < 0.16 ? COOL : WARM).multiplyScalar(on);
+      const on = rng() < 0.3 ? 0 : 0.12 + rng() * 0.5; // dim + many dark
+      color.copy(rng() < 0.16 ? COOL : WARM).multiplyScalar(on);
       windows.setColorAt(i, color);
     }
     windows.instanceMatrix.needsUpdate = true;

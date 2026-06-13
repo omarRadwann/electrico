@@ -119,12 +119,102 @@ a {
      interactions) — interactive elements below opt back in with pointer-events:auto. */
   pointer-events: none;
 }
+
+/* B2B visitors copy emails and verify companies — readable content opts back
+   into the pointer + text selection (no canvas drag interactions exist behind
+   these bands; the dive is scroll-driven). */
+.content #services,
+.content #contact,
+.content .site-footer,
+.content p,
+.content h1,
+.content h2,
+.content h3 {
+  pointer-events: auto;
+  -webkit-user-select: text;
+  user-select: text;
+}
+/* The beat copy is opacity:0 (the camera-synced Narrative overlay carries it
+   on screen) — keep it transparent to the pointer so invisible text can't
+   intercept the live dive band. */
+.content-section--beat .eyebrow,
+.content-section--beat .narrative {
+  pointer-events: none;
+}
+
+/* Skip-link target — focusable (tabindex=-1) without a ring around the whole
+   section; the controls inside carry their own :focus-visible rings. */
+#contact {
+  outline: none;
+}
+
+/* WebGL-failure "poster edition": ExperienceBoundary adds html.no-3d when the
+   canvas dies (mirrored for no-JS by the <noscript> style in layout.tsx) —
+   the beat copy returns and sections collapse to natural height, so the page
+   reads as designed content instead of six blank screens. */
+html.no-3d .content-section {
+  min-height: 0;
+}
+html.no-3d .content-section--beat .eyebrow,
+html.no-3d .content-section--beat .narrative {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .content-section {
+  /* svh first needs the vh fallback line: mobile URL-bar collapse makes 100vh
+     overtall mid-scroll; svh keeps section heights (and therefore the
+     progress↔section mapping) stable. */
   min-height: 100vh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding: clamp(1.5rem, 6vw, 8rem);
+  max-width: 64rem;
+}
+
+/* READABLE CONTENT PANELS over the canvas (briefing §5b): #services, #contact
+   and the footer occupy the dive's tail (p≈0.77→1.0). Without a backdrop the 3D
+   bled THROUGH their text and they stacked into one chaotic frame. A near-opaque
+   night panel (full viewport width via the negative-margin bleed) makes each read
+   as a deliberate, legible end panel — the diegetic noir palette is preserved.
+   The beat sections stay transparent (their copy is opacity:0; the camera-synced
+   Narrative overlay is the only on-screen beat line). */
+.content #services,
+.content #contact {
+  /* span the full viewport width regardless of the .content max-width column */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  max-width: none;
+  background: rgba(5, 7, 13, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+/* The contact landing sits over the Current's climax + match-cut (p≈0.93→0.99).
+   Burying it under an opaque panel killed the site's one signature beat, so the
+   #contact backdrop is a left→right gradient: dark enough behind the left-aligned
+   headline + CTAs to stay legible, fading clear on the right so the energy core
+   GLOWS THROUGH. "The current never stops" reads in front of the living current,
+   not a flat black panel. */
+.content #contact {
+  background: linear-gradient(
+    100deg,
+    rgba(5, 7, 13, 0.95) 0%,
+    rgba(5, 7, 13, 0.9) 38%,
+    rgba(5, 7, 13, 0.55) 72%,
+    rgba(5, 7, 13, 0.32) 100%
+  );
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+/* keep the inner text on the same reading column the rest of the page uses */
+.content #services > *,
+.content #contact > * {
+  max-width: 64rem;
+  width: 100%;
+}
+.content #services .services {
   max-width: 64rem;
 }
 
@@ -201,6 +291,9 @@ a {
   display: inline-block;
   align-self: flex-start;
   pointer-events: auto;
+  /* .cta now dresses <button> as well as <a> — neutralize button chrome. */
+  border: 0;
+  cursor: pointer;
   margin-top: 1.5rem;
   font-family: var(--font-mono);
   font-size: 0.85rem;
@@ -215,6 +308,76 @@ a {
 .cta:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(232, 162, 61, 0.35);
+}
+/* Secondary CTA — outline ghost (the "DIVE AGAIN" demotion: the loop is an
+   explicit choice on the landing, never the only exit). */
+.cta--ghost {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid rgba(243, 237, 226, 0.32);
+}
+.cta--ghost:hover {
+  border-color: var(--fg);
+  box-shadow: 0 8px 30px rgba(243, 237, 226, 0.12);
+}
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 1.5rem;
+  pointer-events: auto;
+}
+.cta-row .cta {
+  margin-top: 0;
+}
+
+/* Post-veil landing headline — the resolved state after the endless loop. */
+.contact-headline {
+  text-transform: uppercase;
+}
+
+/* The concrete capability sentence under each poetic service line — quieter
+   register than the poetry, same column. */
+.service-fact {
+  font-size: 0.86rem;
+  line-height: 1.55;
+  opacity: 0.85;
+}
+
+/* ----------------------------------------------------------------------------
+   Quiet trust footer — wordmark, services line, reachable email, legal line.
+   Mono smallcaps so it reads as the dive's closing instrumentation.
+---------------------------------------------------------------------------- */
+.site-footer {
+  pointer-events: auto;
+  -webkit-user-select: text;
+  user-select: text;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 1rem 2.2rem;
+  padding: clamp(1.5rem, 4vw, 2.5rem) clamp(1.5rem, 6vw, 8rem) clamp(2rem, 5vw, 3rem);
+  border-top: 1px solid rgba(138, 148, 166, 0.18);
+  /* solid night backdrop so the footer reads as a deliberate panel, not text
+     floating over the 3D (briefing §5b). Opaque here — it's the page floor. */
+  background: var(--bg-night);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+.site-footer-mark {
+  color: var(--fg);
+  letter-spacing: 0.42em;
+}
+.site-footer a {
+  text-transform: none; /* the email reads (and copies) as typed */
+  letter-spacing: 0.08em;
+  transition: color 0.25s ease;
+}
+.site-footer a:hover {
+  color: var(--amber);
 }
 
 /* ----------------------------------------------------------------------------
@@ -360,30 +523,73 @@ a {
   height: 0;
   background: linear-gradient(to bottom, var(--amber), rgba(232, 162, 61, 0.12));
 }
+/* Ticks are now <button> navigation (briefing §6.6): the visual stays a 1px
+   line, the button supplies a ~22px hit target + focus ring around it. */
 .hud-gauge-tick {
   position: absolute;
   left: 50%;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-family: var(--font-mono);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.hud-gauge-tick-bar {
+  display: block;
   width: 6px;
   height: 1px;
-  transform: translate(-50%, -50%);
   background: rgba(243, 237, 226, 0.35);
   transition: background 0.4s ease, width 0.4s ease;
 }
-.hud-gauge-tick.is-active {
+.hud-gauge-tick:hover .hud-gauge-tick-bar {
+  width: 12px;
+  background: var(--fg);
+}
+.hud-gauge-tick.is-active .hud-gauge-tick-bar {
   width: 12px;
   background: var(--tc, var(--amber));
 }
 .hud-gauge-tick-num {
   position: absolute;
-  right: 12px;
+  right: 24px;
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.52rem;
   letter-spacing: 0.12em;
+  white-space: nowrap;
   color: var(--fg-dim);
+  transition: color 0.4s ease;
+}
+.hud-gauge-tick:hover .hud-gauge-tick-num {
+  color: var(--fg);
 }
 .hud-gauge-tick.is-active .hud-gauge-tick-num {
   color: var(--tc, var(--amber));
+}
+/* The 7th stop — CONTACT. A small amber diamond, not a tick: a different class
+   of destination (the conversion terminal) than the six dimensions. */
+.hud-gauge-tick--contact .hud-gauge-tick-bar {
+  width: 5px;
+  height: 5px;
+  background: var(--amber);
+  transform: rotate(45deg);
+  box-shadow: 0 0 8px rgba(232, 162, 61, 0.7);
+}
+.hud-gauge-tick--contact:hover .hud-gauge-tick-bar {
+  width: 6px;
+  height: 6px;
+  background: var(--amber);
+}
+.hud-gauge-tick--contact .hud-gauge-tick-num,
+.hud-gauge-tick--contact:hover .hud-gauge-tick-num {
+  color: var(--amber);
 }
 .hud-gauge-marker {
   position: absolute;
@@ -643,6 +849,239 @@ a {
 }
 
 /* ----------------------------------------------------------------------------
+   Contact terminal — THE conversion surface (an overlay state, not a scroll
+   section; briefing §6). Sits ABOVE the loop veil (z-60 vs 40) so it is
+   reachable from any progress, including parked on the wrap seam. Design
+   language = the HUD: mono eyebrows, steel rules, amber accents on near-black,
+   faint scanlines for instrumentation texture.
+---------------------------------------------------------------------------- */
+.terminal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 4vw, 3rem);
+  background: rgba(3, 5, 9, 0.72);
+  backdrop-filter: blur(9px);
+  animation: terminal-in 0.3s ease both;
+}
+.terminal-panel {
+  position: relative;
+  width: min(34rem, 100%);
+  max-height: 88vh; /* fallback for engines without svh */
+  max-height: 88svh;
+  overflow-y: auto;
+  padding: clamp(1.6rem, 4vw, 2.6rem);
+  background: linear-gradient(rgba(10, 13, 21, 0.97), rgba(5, 7, 13, 0.98));
+  border: 1px solid rgba(138, 148, 166, 0.28); /* steel rule */
+  font-family: var(--font-mono);
+  outline: none; /* the panel takes programmatic focus; rings live on controls */
+  animation: terminal-panel-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+/* Faint scanlines — instrumentation, not decoration. */
+.terminal-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(243, 237, 226, 0.025) 0 1px,
+    transparent 1px 3px
+  );
+}
+.terminal-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+  border: 1px solid rgba(243, 237, 226, 0.16);
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+.terminal-close:hover {
+  color: var(--fg);
+  border-color: rgba(232, 162, 61, 0.55);
+}
+.terminal-eyebrow {
+  font-size: 0.66rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.terminal-title {
+  margin-top: 0.7rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 4.5vw, 2.3rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+.terminal-label {
+  margin-top: 1.6rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(138, 148, 166, 0.18);
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+.terminal-services {
+  margin-top: 0.7rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+.terminal-service {
+  --sc: var(--amber);
+  padding: 0.75rem 0.4rem;
+  background: transparent;
+  border: 1px solid rgba(243, 237, 226, 0.16);
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.terminal-service:hover {
+  color: var(--fg);
+}
+.terminal-service[aria-pressed="true"] {
+  color: var(--sc);
+  border-color: var(--sc);
+  box-shadow: 0 0 18px -8px var(--sc);
+}
+.terminal-action {
+  margin-top: 1.4rem;
+  padding-left: 0.8rem;
+  border-left: 2px solid var(--sc, var(--amber));
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+  font-weight: 300;
+  color: var(--fg);
+}
+.terminal-channels {
+  margin-top: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.terminal-channel {
+  display: block;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(243, 237, 226, 0.2);
+  color: var(--fg);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+  transition: border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+.terminal-channel:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+/* Primary channel (WhatsApp when configured) — the one filled button. */
+.terminal-channel--primary {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: var(--bg-night);
+}
+.terminal-channel--primary:hover {
+  color: var(--bg-night);
+  box-shadow: 0 8px 30px rgba(232, 162, 61, 0.35);
+}
+.terminal-email-row {
+  margin-top: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.7rem 1rem;
+  border: 1px dashed rgba(138, 148, 166, 0.3);
+}
+.terminal-email {
+  /* B2B visitors copy emails — selectable by design. */
+  -webkit-user-select: text;
+  user-select: text;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+.terminal-copy {
+  flex-shrink: 0;
+  padding: 0.4rem 0.7rem;
+  background: transparent;
+  border: 1px solid rgba(243, 237, 226, 0.2);
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+.terminal-copy:hover {
+  color: var(--amber);
+  border-color: rgba(232, 162, 61, 0.55);
+}
+.terminal-dive {
+  margin-top: 1.5rem;
+  width: 100%;
+  padding: 0.7rem;
+  background: transparent;
+  border: none;
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.25s ease;
+}
+.terminal-dive:hover {
+  color: var(--fg);
+}
+@keyframes terminal-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes terminal-panel-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 420px) {
+  .terminal-services {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Keyboard focus — one amber ring across every interactive control (HUD,
+   terminal, CTAs, footer). :focus-visible only: pointer clicks stay chrome-free.
+---------------------------------------------------------------------------- */
+.cta:focus-visible,
+.hud :focus-visible,
+.terminal :focus-visible,
+.site-footer a:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+/* ----------------------------------------------------------------------------
    Reduced-motion safety net (spec §3.5). Full reduced-motion path is built in
    M7; this disables decorative loops for users who opt out.
 ---------------------------------------------------------------------------- */
@@ -659,7 +1098,9 @@ a {
   .loader-spark,
   .loader-field::before,
   .loader-mark,
-  .loader-eyebrow {
+  .loader-eyebrow,
+  .terminal,
+  .terminal-panel {
     animation: none;
   }
 }

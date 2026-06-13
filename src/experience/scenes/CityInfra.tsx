@@ -127,11 +127,17 @@ export function CityInfra() {
     mk.instanceMatrix.needsUpdate = true;
   }, []);
 
-  // Subtle pulse on the substation glow so the grid feels live.
+  // Subtle pulse on the substation glow so the grid feels live. Gated to the City
+  // band — no per-frame material write once the camera has dived away (the City
+  // is only on screen at boot + each loop seam).
   const subMatRef = useRef<THREE.MeshStandardMaterial>(null);
   useFrame((s) => {
+    if (useExperience.getState().progress > 0.25) return;
     if (subMatRef.current) {
-      subMatRef.current.emissiveIntensity = 1.2 + 0.4 * Math.sin(s.clock.elapsedTime * 1.5);
+      // Higher base + swing because the core is now toneMapped:true (filmic grade):
+      // emissiveIntensity must clear the bloom threshold (0.55 pre-tonemap HDR) to
+      // keep the transformer glow punching — the toneMapped-discipline recovery.
+      subMatRef.current.emissiveIntensity = 2.4 + 0.8 * Math.sin(s.clock.elapsedTime * 1.5);
     }
   });
 
@@ -154,15 +160,20 @@ export function CityInfra() {
           <mesh material={SUB_BODY} position={[0, 0.6, 0]}>
             <boxGeometry args={[3.2, 2.2, 3.2]} />
           </mesh>
-          {/* glowing transformer core (pulses) */}
+          {/* glowing transformer core (pulses). LIT Standard material → it must be
+              toneMapped:true (the IBL/ambient lights its faces); the "cheap neon"
+              read came from bypassing the filmic grade. Bloom recovered via the
+              higher emissiveIntensity in useFrame (initial value clears threshold). */}
           <mesh position={[0, 1.9, 0]}>
             <boxGeometry args={[2.4, 0.5, 2.4]} />
             <meshStandardMaterial
               ref={i === 0 ? subMatRef : undefined}
               color="#3a1c08"
               emissive="#ff8a30"
-              emissiveIntensity={1.4}
-              toneMapped={false}
+              emissiveIntensity={2.4}
+              toneMapped
+              roughness={0.5}
+              metalness={0.2}
             />
           </mesh>
           {/* warm pool of light on the block (props tier) */}

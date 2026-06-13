@@ -174,8 +174,11 @@ export function BuildingSite() {
     }
   }, []);
 
-  // Crane aviation beacon — slow red blink.
+  // Crane aviation beacon — slow red blink. Gated to the Building band so there's
+  // no per-frame material write while the camera is in other dimensions (the
+  // Building is only on screen p≈0.22–0.50).
   useFrame((s) => {
+    if (useExperience.getState().progress > 0.52) return;
     if (beaconRef.current) {
       const b = Math.pow(0.5 + 0.5 * Math.sin(s.clock.elapsedTime * 2.0), 4);
       beaconRef.current.emissiveIntensity = 0.3 + b * 3.5;
@@ -198,10 +201,12 @@ export function BuildingSite() {
       <mesh position={[HOOK_X, 2.4, CRANE_Z]} material={STEEL}>
         <boxGeometry args={[2.4, 1.6, 2.4]} />
       </mesh>
-      {/* Red aviation beacon on the mast top. */}
+      {/* Red aviation beacon on the mast top. LIT Standard material → toneMapped:true
+          (the IBL/fill lights its sphere); the bloom punch comes from the pulsed
+          emissiveIntensity (peaks ~3.8, well over the 0.55 threshold) in useFrame. */}
       <mesh position={[CRANE_X, MAST_TOP + 0.6, CRANE_Z]}>
         <sphereGeometry args={[0.4, 10, 10]} />
-        <meshStandardMaterial ref={beaconRef} color="#3a0a08" emissive="#ff2a1a" emissiveIntensity={1} toneMapped={false} />
+        <meshStandardMaterial ref={beaconRef} color="#3a0a08" emissive="#ff2a1a" emissiveIntensity={1} toneMapped roughness={0.5} metalness={0.2} />
       </mesh>
       {/* Marker / warning lights tracing the crane's silhouette — cool white so it
           reads as a separate steel structure, distinct from the amber windows. */}

@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { ZONES } from "../cameraPath";
+import { useExperience } from "@/src/store/useExperience";
 
 /**
  * The City, alive: traffic light-streaks flowing along the street grid + red
@@ -20,6 +21,22 @@ const STREET_Y = GROUND_Y + 0.35;
 
 const TRAFFIC = 54;
 const BEACONS = 9;
+
+// Towers are clamped to half-width ≤ 2.0 (CityScene.TOWER_MAX_HALF); a streak lane
+// laid HALF a cell off the tower grid line sits in the street gap. Clamp the lane
+// jitter so a streak never wanders out of the gap and clips a tower corner.
+const LANE_OFFSET = SPACING / 2; // centre lanes between tower rows (the streets)
+const LANE_JITTER = 0.6; // ≤ (gap/2 − tower_half − streak_half) → stays in-street
+
+// Seeded LCG so the traffic layout is deterministic across reloads (matches the
+// rest of the City; nothing here touches the flight line — the grid sits ≥y=−6.6).
+function makeRng(seed: number): () => number {
+  let s = seed >>> 0;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
 
 interface Streak {
   axisZ: boolean; // travels along z (else along x)
@@ -42,21 +59,23 @@ export function CityLife() {
   const beaconPhase = useRef<number[]>([]);
 
   useLayoutEffect(() => {
-    // Traffic streaks on the street grid.
+    const rng = makeRng(0x4d21);
+    // Traffic streaks on the street grid — lanes sit in the STREET GAPS (half a
+    // cell off the tower grid) with clamped jitter so they never clip a tower.
     const arr: Streak[] = [];
     const tr = trafficRef.current;
     for (let i = 0; i < TRAFFIC; i++) {
-      const axisZ = Math.random() < 0.5;
-      const lane = (Math.floor(Math.random() * 7) - 3) * SPACING + (Math.random() - 0.5) * 1.5;
+      const axisZ = rng() < 0.5;
+      const lane = (Math.floor(rng() * 7) - 3) * SPACING + LANE_OFFSET + (rng() - 0.5) * LANE_JITTER;
       const fixed = (axisZ ? CITY.x : CITY.z) + lane;
-      const pos = (Math.random() * 2 - 1) * EXTENT;
-      const dir = Math.random() < 0.5 ? 1 : -1;
-      const speed = (8 + Math.random() * 14) * dir;
-      const len = 1.0 + Math.random() * 2.2;
+      const pos = (rng() * 2 - 1) * EXTENT;
+      const dir = rng() < 0.5 ? 1 : -1;
+      const speed = (8 + rng() * 14) * dir;
+      const len = 1.0 + rng() * 2.2;
       arr.push({ axisZ, fixed, pos, speed, len });
       if (tr) {
-        const isTail = Math.random() < 0.32;
-        _col.copy(Math.random() < 0.12 ? COOL : isTail ? TAIL : HEAD).multiplyScalar(isTail ? 1.1 : 1.8);
+        const isTail = rng() < 0.32;
+        _col.copy(rng() < 0.12 ? COOL : isTail ? TAIL : HEAD).multiplyScalar(isTail ? 1.1 : 1.8);
         tr.setColorAt(i, _col);
       }
     }
@@ -69,17 +88,17 @@ export function CityLife() {
     if (bc) {
       for (let i = 0; i < BEACONS; i++) {
         _dummy.position.set(
-          CITY.x + (Math.random() * 2 - 1) * EXTENT,
-          GROUND_Y + 12 + Math.random() * 8,
-          CITY.z + (Math.random() * 2 - 1) * EXTENT,
+          CITY.x + (rng() * 2 - 1) * EXTENT,
+          GROUND_Y + 12 + rng() * 8,
+          CITY.z + (rng() * 2 - 1) * EXTENT,
         );
-        _dummy.scale.setScalar(0.16 + Math.random() * 0.1);
+        _dummy.scale.setScalar(0.16 + rng() * 0.1);
         _dummy.rotation.set(0, 0, 0);
         _dummy.updateMatrix();
         bc.setMatrixAt(i, _dummy.matrix);
         _col.setRGB(0.2, 0.02, 0.01);
         bc.setColorAt(i, _col);
-        phases.push(Math.random() * Math.PI * 2);
+        phases.push(rng() * Math.PI * 2);
       }
       bc.instanceMatrix.needsUpdate = true;
       if (bc.instanceColor) bc.instanceColor.needsUpdate = true;
@@ -88,6 +107,11 @@ export function CityLife() {
   }, []);
 
   useFrame((s, dt) => {
+    // PERF: the City is on screen only at boot + each loop seam. Skip the traffic
+    // matrix + beacon color uploads once the camera has dived out of the City band
+    // (these streaks are invisible from a dimension away). Matches CityScene's gate.
+    if (useExperience.getState().progress > 0.25) return;
+
     // Traffic flow.
     const tr = trafficRef.current;
     if (tr) {

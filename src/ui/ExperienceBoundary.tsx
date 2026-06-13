@@ -19,6 +19,13 @@ export class ExperienceBoundary extends Component<
   }
 
   componentDidCatch(error: unknown) {
+    // The fixed canvas overlay is gone — flip the document into its "poster
+    // edition": html.no-3d (globals.css) restores the beat copy and collapses
+    // the 100svh beat sections to natural height, so the visitor reads designed
+    // content instead of six blank screens. Mirrored for no-JS by the
+    // <noscript> style in layout.tsx. componentDidCatch only runs client-side,
+    // so the document write is safe.
+    document.documentElement.classList.add("no-3d");
     if (process.env.NODE_ENV !== "production") {
       console.warn("[ELECTRICO] 3D experience disabled (rendering content only):", error);
     }
