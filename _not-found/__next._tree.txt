@@ -1,2 +1,2 @@
-:HL["/electrico/_next/static/chunks/3_abq5cidw7e4.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"/_not-found","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}},"staleTime":300,"buildId":"bm_3dMp2FWOOJTeFwKh39"}
+:HL["/electrico/_next/static/chunks/3zugfi26pa99q.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"/_not-found","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}},"staleTime":300,"buildId":"qxr6VwUXToQmwsjwcgYul"}
