@@ -41,12 +41,29 @@ const FH = 34; // facade height
 const COLS = 12;
 const ROWS = 16;
 const WIN = COLS * ROWS;
-const FAR_WIN = 520; // distant lit windows scattered across the skyline masses
-                     // (raised from 280: the right two-thirds of the framed
-                     // composition read near-black + sparse — more lit windows on
-                     // more masses fill it into a believable deep night skyline)
+// Distant skyline windows. Was 520 windows SCATTERED RANDOMLY across each mass
+// face (sparse dots over a large dark face → the masses never read as towers, just
+// a few amber cards floating in void on the right two-thirds of the frame). Now a
+// DENSE REGULAR GRID per mass (like the lit facade + the City), so each mass reads
+// as a LIT TOWER covered in windows. Capacity raised so the per-mass grids fill the
+// frame; the actual placed count is computed at build time (mass front-face area
+// driven) and written to far.count. One instanced draw regardless.
+const FAR_WIN_MAX = 2400;
 const WIN_COLOR = new THREE.Color("#ffc46b");
 const COOL_WIN = new THREE.Color("#bcd2ff"); // ~15% of windows read cooler — real skylines aren't one colour
+
+// Per-mass window-grid cadence — the spacing (in world units) between window
+// CENTRES on a mass front face. The facade uses ~1.8u columns over 22u; the
+// distant masses are smaller on screen, so a slightly tighter grid keeps each one
+// reading as a covered tower rather than a handful of dots. Window cells are then
+// sized to leave dark mullion gaps between them (the gaps = the tower body reading).
+// Cadence ≈ the lit facade's (≈2.0 col / 2.3 row) but a touch tighter — the distant
+// masses are smaller on screen, so a denser grid keeps each reading as a covered
+// tower. Total placed ≈1720 windows across the 12 masses (area-driven), in the
+// "deep dense skyline" band, well under FAR_WIN_MAX. One instanced draw.
+const FAR_WIN_COL_STEP = 1.5; // horizontal spacing between window columns
+const FAR_WIN_ROW_STEP = 1.8; // vertical spacing between window rows
+const FAR_WIN_DARK = 0.24; // ~24% of grid cells unlit (seeded) — body reads, denser glow
 
 // --- THE APERTURE -----------------------------------------------------------
 // Camera/facade crossing, recovered from sampleCamera (see the dev assert at the
@@ -272,42 +289,67 @@ export function BuildingScene() {
       crown.instanceMatrix.needsUpdate = true;
     }
 
-    // Distant lit windows scattered across the skyline masses — turns the dark
-    // silhouettes into a living city backdrop with depth, filling the frame past
-    // the main tower. Dimmer than the facade since they read as far away. Seeded
-    // so the backdrop is stable across reloads.
+    // Distant skyline windows — a DENSE REGULAR GRID on each mass's FRONT (+z) face
+    // so every mass reads as a LIT TOWER covered in windows, exactly like the lit
+    // facade and the City (which read because they are dense regular grids on lit
+    // bodies). The OLD code scattered ~520 windows RANDOMLY (mx±mw·0.45 etc.) — a
+    // sparse spray of dots over a large dark face, so the right two-thirds of the
+    // frame read as ~6 amber cards floating in void instead of a skyline.
+    //
+    // Per mass: lay a column×row grid across the front face (cadence FAR_WIN_*_STEP),
+    // inset half a step from each edge so the lit rectangle floats on the dark mass
+    // body (the dark margins + the dark gaps between windows = the tower reading).
+    // ~30% of cells unlit (seeded) gives the irregular "some floors dark" life of a
+    // real night tower. Window cells are sized SMALLER than the cadence so a dark
+    // mullion gap always shows between them. Seeded RNG → stable across reloads.
     const far = farWinRef.current;
     if (far) {
       const dummy = new THREE.Object3D();
       const color = new THREE.Color();
       const rng = makeRng(0x7f33);
-      for (let n = 0; n < FAR_WIN; n++) {
-        const [mx, my, mz, mw, mh, md] = SKYLINE[n % SKYLINE.length];
-        const y = my + (rng() - 0.5) * mh * 0.9;
-        const face = rng();
-        let x: number;
-        let z: number;
-        if (face < 0.68) {
-          // front (+z) face — what the approaching camera sees
-          x = mx + (rng() - 0.5) * mw * 0.9;
-          z = mz + md / 2 + 0.05;
-          dummy.scale.set(0.5, 0.7, 0.1);
-        } else {
-          const sgn = face < 0.84 ? 1 : -1; // a side face
-          x = mx + sgn * (mw / 2 + 0.05);
-          z = mz + (rng() - 0.5) * md * 0.9;
-          dummy.scale.set(0.1, 0.7, 0.5);
-        }
-        dummy.position.set(x, y, z);
+      let n = 0;
+      for (let m = 0; m < SKYLINE.length && n < FAR_WIN_MAX; m++) {
+        const [mx, my, mz, mw, mh, md] = SKYLINE[m];
+        // Window-able front-face extent (leave a margin so windows don't bleed off
+        // the silhouette edge). Columns/rows derived from the face size ÷ cadence,
+        // so bigger masses get proportionally MORE windows (area-driven density).
+        const usableW = mw * 0.82;
+        const usableH = mh * 0.88;
+        const cols = Math.max(2, Math.round(usableW / FAR_WIN_COL_STEP));
+        const rows = Math.max(3, Math.round(usableH / FAR_WIN_ROW_STEP));
+        const zFront = mz + md / 2 + 0.06; // just proud of the front face (no z-fight)
+        // Window cell size: ~70% of the cadence so a dark gap always reads between
+        // windows; depth thin so it sits on the face, not poking out as a block.
+        const cw = (usableW / cols) * 0.7;
+        const ch = (usableH / rows) * 0.66;
+        dummy.scale.set(cw, ch, 0.12);
         dummy.rotation.set(0, 0, 0);
-        dummy.updateMatrix();
-        far.setMatrixAt(n, dummy.matrix);
-        // More windows lit (off-rate 0.32 → 0.2) and a touch brighter so the right
-        // masses read as believable lit towers, not a few specks floating in void.
-        const on = rng() < 0.2 ? 0.0 : 0.5 + rng() * 1.0;
-        color.copy(rng() < 0.2 ? COOL_WIN : WIN_COLOR).multiplyScalar(on);
-        far.setColorAt(n, color);
+        for (let c = 0; c < cols && n < FAR_WIN_MAX; c++) {
+          for (let r = 0; r < rows && n < FAR_WIN_MAX; r++) {
+            // Centre of each grid cell across the usable face (inset, even spacing).
+            const x = mx + (cols === 1 ? 0 : (c / (cols - 1) - 0.5) * usableW);
+            const y = my + (rows === 1 ? 0 : (r / (rows - 1) - 0.5) * usableH);
+            dummy.position.set(x, y, zFront);
+            dummy.updateMatrix();
+            far.setMatrixAt(n, dummy.matrix);
+            // Seeded warm/cool mix; ~30% dark cells so the body reads. Dimmer than
+            // the foreground facade (these are far) but bright enough to read as a
+            // lit tower, not a few specks: lit cells 0.55..1.35.
+            const dark = rng() < FAR_WIN_DARK;
+            // Brightness matched to the foreground facade (0.7..2.1): the old dim
+            // 0.55..1.35 vanished at the facade-approach framing / reduced tier
+            // (distance + fog ate it, leaving only the brightest few = floating
+            // cards). At facade brightness the whole dense grid punches through and
+            // each mass reads as a lit tower.
+            const brightness = dark ? 0.0 : 0.8 + rng() * 1.3;
+            const cool = rng() < 0.22;
+            color.copy(cool ? COOL_WIN : WIN_COLOR).multiplyScalar(brightness);
+            far.setColorAt(n, color);
+            n++;
+          }
+        }
       }
+      far.count = n; // only the placed grid windows draw (capacity is the ceiling)
       far.instanceMatrix.needsUpdate = true;
       if (far.instanceColor) far.instanceColor.needsUpdate = true;
     }
@@ -393,8 +435,10 @@ export function BuildingScene() {
         </mesh>
       ))}
 
-      {/* Distant city windows on the skyline masses — depth + life in the backdrop. */}
-      <instancedMesh ref={farWinRef} args={[undefined, undefined, FAR_WIN]} frustumCulled={false}>
+      {/* Distant skyline windows — a dense grid per mass so each reads as a lit
+          tower (not random scattered dots). Capacity = ceiling; far.count is the
+          actual placed grid total written in useLayoutEffect. One instanced draw. */}
+      <instancedMesh ref={farWinRef} args={[undefined, undefined, FAR_WIN_MAX]} frustumCulled={false}>
         <boxGeometry args={[1, 1, 1]} />
         <meshBasicMaterial toneMapped={false} />
       </instancedMesh>

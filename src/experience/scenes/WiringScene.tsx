@@ -67,11 +67,21 @@ function clearXY(p: THREE.Vector3): THREE.Vector3 {
 const rXY = (p: THREE.Vector3) => Math.hypot(p.x - A.x, p.y - A.y);
 
 // --- Hero breaker panel --------------------------------------------------------
-// Rescaled 2.3× and pulled to ~9.8u from the (1.5, 1, -172) park (it was ~20u
-// away at ~3% of frame). Off the flight line: left edge x≈3.18 → 1.68u clear.
-const PS = 2.3;
-const BOX = new THREE.Vector3(A.x + 4.9, A.y - 0.4, A.z - 6.5); // (6.4, 0.6, -180.5)
-const PANEL_W = 2.8 * PS;
+// FRAMING (verified against cameraPath keys 8-9): at the p≈0.77 park the camera
+// sits at (1.5, 1, -172) looking dead down −z at (1.5, 1, -196) — view dir is
+// essentially pure −z, FOV 55 (≈88° horizontal half-angle ≈44°). The panel must
+// land in the right-third of THAT frame, lit and LARGE, with conduits visibly
+// diving into it. The old box read at ~0% of the frame not because it was
+// off-screen (Δx=4.9, Δz=−8.5 → only 30° off-axis, comfortably inside 44°) but
+// because dark steel (#2a3038) on near-black with a single coincident point
+// light has no edge contrast — it dissolved into the dark corridor.
+//   Fixes here: keep it clearance-safe (left edge must clear x=2.7, the r<1.2
+//   exclusion around the axis), scale UP to dominate the right of the frame, and
+//   pull it ~1u nearer so it grows in frame. Δx held at 4.9 (left edge stays
+//   3.0 ≥ 2.7); the legibility win comes from light + scale + convergence below.
+const PS = 2.6;
+const BOX = new THREE.Vector3(A.x + 4.9, A.y - 0.2, A.z - 6.0); // (6.4, 0.8, -180)
+const PANEL_W = 2.8 * PS; // 7.28 → left edge x = 6.4 − 3.64 = 2.76 ≥ 2.7 (clear)
 const PANEL_H = 3.6 * PS;
 const PANEL_D = 1.1;
 const PANEL_TOP = BOX.y + PANEL_H / 2;
@@ -92,16 +102,48 @@ const FEED_ENTRY = Array.from({ length: 5 }, (_, i) => ({
 // --- Tube curves ----------------------------------------------------------------
 const Z_STEP = 60 / 7; // free tubes span A.z+30 … A.z−30 (z linear in s)
 
-function makeCurve(k: number, jitter: number): THREE.CatmullRomCurve3 {
+// Free-run lanes: at the p≈0.77 park the camera looks dead down −z, so a tube
+// only READS if it runs roughly PARALLEL to the view (down the corridor) within
+// the visible cone — the old sin/cos swirl (amp 1.4 around a ±3.25 base) sent
+// each tube diagonally across the frame, so only a sliver of any one tube was in
+// view and the bundle read as "one bright arc in the dark". Instead, seed each
+// free run onto a deterministic lane: a base (x,y) spread across the readable
+// band biased toward the visible cone, then add only a GENTLE lateral wander so
+// the runs look hand-installed, not extruded — but stay framed end-to-end.
+// Lanes deliberately avoid the r<1.2 axis tube and the panel footprint (x>3),
+// and lean toward −x / upper-left so they don't fight the hero panel on the right.
+const LANES: { x: number; y: number; sway: number }[] = [
+  { x: A.x - 3.2, y: A.y + 2.6, sway: 0.9 },
+  { x: A.x - 2.4, y: A.y - 2.8, sway: 1.1 },
+  { x: A.x - 3.6, y: A.y - 0.4, sway: 0.7 },
+  { x: A.x - 1.6, y: A.y + 3.1, sway: 1.0 },
+  { x: A.x + 1.9, y: A.y + 3.4, sway: 0.7 }, // upper-mid, threads ABOVE the panel top
+  { x: A.x - 2.9, y: A.y + 0.9, sway: 1.2 },
+  { x: A.x - 1.9, y: A.y - 2.2, sway: 0.9 },
+  { x: A.x - 3.3, y: A.y + 1.7, sway: 1.0 },
+];
+let _laneCursor = 0;
+function nextLane(): { x: number; y: number; sway: number } {
+  const lane = LANES[_laneCursor % LANES.length];
+  _laneCursor++;
+  // Tiny seeded per-run offset so two tubes sharing a lane don't overlap exactly.
+  return {
+    x: lane.x + (rand() - 0.5) * 0.6,
+    y: lane.y + (rand() - 0.5) * 0.6,
+    sway: lane.sway,
+  };
+}
+
+function makeCurve(k: number): THREE.CatmullRomCurve3 {
   const pts: THREE.Vector3[] = [];
-  const bx = A.x + (rand() - 0.5) * jitter;
-  const by = A.y + (rand() - 0.5) * jitter;
+  const lane = nextLane();
+  const phase = rand() * Math.PI * 2; // seeded sway phase per run
   for (let s = 0; s <= 7; s++) {
     pts.push(
       clearXY(
         new THREE.Vector3(
-          bx + Math.sin(s * 1.2 + k) * 1.4,
-          by + Math.cos(s * 1.05 + k * 1.7) * 1.4,
+          lane.x + Math.sin(s * 0.7 + k + phase) * lane.sway,
+          lane.y + Math.cos(s * 0.6 + k * 1.3 + phase) * lane.sway * 0.7,
           A.z + 30 - s * Z_STEP,
         ),
       ),
@@ -152,13 +194,18 @@ interface TubeDef {
   feed: boolean;
 }
 
-const CONDUITS: TubeDef[] = Array.from({ length: 8 }, (_, k) => ({
-  curve: k < 3 ? makeFeedCurve(k, 6.5, FEED_ENTRY[k * 2]) : makeCurve(k, 6.5),
-  radius: 0.34 + rand() * 0.12,
+// Densified bundle so the run reads as a SYSTEM of conduits, not one tube:
+// 10 grey conduits (3 feed into the panel + 7 free runs) and 9 copper conductors
+// (2 feed + 7 free) — enough parallel runs to fill the visible cone at the park
+// while every free run sits on a framed lane (above) and every point is
+// clearance-clamped (clearXY) off the flight line.
+const CONDUITS: TubeDef[] = Array.from({ length: 10 }, (_, k) => ({
+  curve: k < 3 ? makeFeedCurve(k, 6.5, FEED_ENTRY[k * 2]) : makeCurve(k),
+  radius: 0.3 + rand() * 0.12,
   feed: k < 3,
 }));
-const COPPERS: TubeDef[] = Array.from({ length: 6 }, (_, k) => ({
-  curve: k < 2 ? makeFeedCurve(k + 20, 3.8, FEED_ENTRY[k * 2 + 1]) : makeCurve(k + 20, 3.8),
+const COPPERS: TubeDef[] = Array.from({ length: 9 }, (_, k) => ({
+  curve: k < 2 ? makeFeedCurve(k + 20, 3.8, FEED_ENTRY[k * 2 + 1]) : makeCurve(k + 20),
   radius: 0.11 + rand() * 0.05,
   feed: k < 2,
 }));
@@ -193,20 +240,23 @@ const STEEL_MAT = new THREE.MeshStandardMaterial({
 });
 // Albedos lifted off near-black so the cavity (drywall back + timber studs) is
 // LEGIBLY PRESENT as the wall the wiring lives in — at p≈0.77 it was almost
-// pure black around the tubes. A faint cool emissive floor (well under the 0.55
-// bloom threshold) keeps the structure readable even in the deepest shadow,
-// WITHOUT washing out the night mood or competing with the amber conduits.
+// pure black around the tubes. The albedo is raised AND a faint cool emissive
+// floor (well under the 0.55 bloom threshold pre-tonemap) keeps the structure
+// readable even in the deepest shadow, WITHOUT washing out the night mood or
+// competing with the amber/copper conduits. The drywall is the dim backdrop the
+// glowing copper sits AGAINST, so it must be a visible-but-dim surface, not
+// black — the raking cool fills below model it; the emissive only floors it.
 const DRYWALL_MAT = new THREE.MeshStandardMaterial({
-  color: "#1a1d24",
-  emissive: "#10141c",
-  emissiveIntensity: 0.5,
+  color: "#2b313d", // up from #1a1d24 — a dim slate drywall back, clearly present
+  emissive: "#161b26",
+  emissiveIntensity: 0.7,
   roughness: 0.96,
   metalness: 0,
 });
 const TIMBER_MAT = new THREE.MeshStandardMaterial({
-  color: "#2a2017",
-  emissive: "#150f08",
-  emissiveIntensity: 0.5,
+  color: "#42321f", // up from #2a2017 — warm pine studs read against the slate back
+  emissive: "#1c1409",
+  emissiveIntensity: 0.7,
   roughness: 0.9,
   metalness: 0.05,
 });
@@ -293,11 +343,14 @@ const _bo = new THREE.Object3D();
 
 // --- Wall cavity -------------------------------------------------------------------
 // Asymmetric on purpose: the +x face sits deeper so the hero panel reads as
-// flush-MOUNTED on it (panel right edge x≈9.62 vs face x=9.9). The mouth opens
-// at z=-143 (the camera enters from the Room side at p≈0.66); the cavity ends at
-// z=-195 where the Wiring→Current boundary flash masks the exit.
-const WALL_X_NEG = A.x - 4.6;
-const WALL_X_POS = A.x + 8.4;
+// flush-MOUNTED on it (panel right edge x≈10.04 vs face x=10.4). The −x face is
+// pulled IN to x≈−2.9 (Δx=−4.4 from the axis — still clear of the r<1.2 flight
+// exclusion) so the left drywall+studs occupy more of the framed left wall at the
+// park instead of raking away into the dark. The mouth opens at z=-143 (camera
+// enters from the Room side at p≈0.66); the cavity ends at z=-195 where the
+// Wiring→Current boundary flash masks the exit.
+const WALL_X_NEG = A.x - 4.4;
+const WALL_X_POS = A.x + 8.9;
 const WALL_Y0 = A.y - 7;
 const WALL_Y1 = A.y + 9;
 const WALL_Z0 = A.z + 31;
@@ -305,7 +358,10 @@ const WALL_Z1 = A.z - 21;
 const STUD_STEP = 4;
 const STUD_X = [WALL_X_NEG + 0.3, WALL_X_POS - 0.3];
 const MAX_LATTICE = 96;
-const MAX_FITTINGS = 48;
+// Raised from 48: the densified bundle (7 free conduits, up from 5) produces more
+// staple clamps. The put() guard still hard-caps writes, but the cap is sized to
+// the data so no fitting is silently dropped (briefing P2: allocate from data).
+const MAX_FITTINGS = 72;
 
 // Lattice-builder temporaries (module-scope, reused — one scene, sequential).
 const _la = new THREE.Vector3();
@@ -324,6 +380,7 @@ export function WiringScene() {
   const latticeRef = useRef<THREE.InstancedMesh>(null);
   const fittingsRef = useRef<THREE.InstancedMesh>(null);
   const bright = useRef<number[]>([]);
+  const groupRef = useRef<THREE.Group>(null);
 
   useLayoutEffect(() => {
     const m = sparkRef.current;
@@ -497,6 +554,18 @@ export function WiringScene() {
   }, []);
 
   useFrame((_, dt) => {
+    // SCENE-BLEED GATE (same class as the Frame gate): the wall cavity starts at
+    // z≈-143 but the ROOM occupies z -152…-127, so the −x drywall slab + studs sit
+    // INSIDE the Room volume and rendered as a dark slab slicing the Room's far
+    // half (worsened now the cavity is lit brighter). Show Wiring only within its
+    // band: 0.69 = Room→Wiring boundary midpoint, 0.85 = Wiring→Current midpoint —
+    // both land under the boundary flash; the approach (p≈0.70) is inside the band.
+    const g = groupRef.current;
+    if (g) {
+      const p = useExperience.getState().progress;
+      g.visible = p > 0.69 && p < 0.85;
+      if (!g.visible) return; // also skips the pulse + spark uploads while hidden
+    }
     // Traveling-pulse phase: base flow + scroll-velocity hurry (same soft-knee
     // normalization as the audio wind bus — Lenis velocity has no fixed unit).
     const v = Math.abs(useExperience.getState().velocity);
@@ -519,7 +588,7 @@ export function WiringScene() {
   });
 
   return (
-    <group>
+    <group ref={groupRef}>
       {CONDUIT_GEOMS.map((g, i) => (
         <mesh key={`c${i}`} geometry={g} material={CONDUIT_MAT} />
       ))}
@@ -571,25 +640,35 @@ export function WiringScene() {
         <meshBasicMaterial toneMapped={false} />
       </instancedMesh>
 
-      {/* Warm key on the hero panel (power = amber per the palette; the old cool
-          blue fought the dimension's service color). */}
-      <pointLight position={[BOX.x, BOX.y + 1.2, BOX.z + 4]} color="#ffb35c" intensity={26} distance={24} decay={2} />
+      {/* Warm KEY on the hero panel (power = amber per the palette). Sits in
+          front-left of the panel face (toward the camera at z≈−172) so the steel
+          enclosure + breaker rows are clearly lit and the panel SEPARATES from the
+          black corridor instead of dissolving into it. */}
+      <pointLight position={[BOX.x - 1.4, BOX.y + 1.4, BOX.z + 5]} color="#ffb35c" intensity={34} distance={26} decay={2} />
+      {/* Tight warm fill close on the panel face — lifts the breaker grid + the
+          enamelled-steel front so the distribution panel READS as the hero icon. */}
+      <pointLight position={[BOX.x, BOX.y, BOX.z + 2.2]} color="#ffc070" intensity={22} distance={12} decay={2} />
       {/* Cool rim (no shadow, all tiers) gives the dark conduits a lit/dark side
           so they read as round tubes, not flat silhouettes. Lateral to the dive. */}
-      <pointLight position={[A.x - 3, A.y + 3, A.z + 6]} color="#9fc0ff" intensity={30} distance={30} decay={2} />
-      {/* Dim COOL CAVITY FILL (all tiers — the wall context is silhouette-critical):
-          rakes the drywall back + timber studs so "inside the wall" READS, instead
-          of black around the tubes. Kept low + wide so it models the structure
-          without lifting the night mood or out-shining the amber/copper conduits.
-          Sits just inside the −x cavity face (x≈−2.5) and well clear of the flight
-          line (axis x=1.5, r<1.2 → avoid x∈[0.3,2.7]). */}
-      <pointLight position={[A.x - 4, A.y + 2, A.z]} color="#8aa6d8" intensity={24} distance={28} decay={2} />
-      <pointLight position={[A.x - 4, A.y - 2, A.z - 16]} color="#7e9bce" intensity={20} distance={26} decay={2} />
+      <pointLight position={[A.x - 3, A.y + 3, A.z + 6]} color="#9fc0ff" intensity={32} distance={30} decay={2} />
+      {/* COOL CAVITY RAKE (all tiers — the wall context is silhouette-critical):
+          two grazing fills run DOWN the −x drywall back + timber studs so the
+          "inside a wall" structure reads as a lit surface the glowing copper sits
+          against, instead of black around the tubes. Raised from the old dim pair
+          (24/20 → 30/26) and spread along z so the rake reaches the whole framed
+          run. Kept cool + under the conduits' brightness so the night mood and the
+          amber/copper hero glow are never washed out. Sit just inside the −x face
+          (x≈−3.6), lateral and well clear of the flight line (axis x=1.5). */}
+      <pointLight position={[A.x - 3.6, A.y + 2, A.z + 2]} color="#8aa6d8" intensity={30} distance={30} decay={2} />
+      <pointLight position={[A.x - 3.6, A.y - 2, A.z - 16]} color="#7e9bce" intensity={26} distance={28} decay={2} />
+      {/* Upper cool fill rakes the noggin row + the ceiling-side studs so the top
+          of the cavity isn't a black void above the bundle. */}
+      <pointLight position={[A.x - 1, A.y + 5.5, A.z - 8]} color="#9fb4dc" intensity={18} distance={24} decay={2} />
       {/* Amber cavity fill — sells "lit by the copper's glow" on the timber and
           drywall (emissive doesn't actually light neighbors). Props tiers only;
           minimal keeps the geometry but drops this light. */}
       {tier.props && (
-        <pointLight position={[A.x + 2, A.y + 3, A.z - 4]} color="#ff9a3c" intensity={18} distance={24} decay={2} />
+        <pointLight position={[A.x + 2, A.y + 3, A.z - 4]} color="#ff9a3c" intensity={20} distance={24} decay={2} />
       )}
     </group>
   );

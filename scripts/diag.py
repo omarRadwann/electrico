@@ -1,6 +1,6 @@
-"""Per-tier diagnostic via the ?tier= URL override (clean boot per tier — no
-PerformanceMonitor fight). Loads fresh for each tier, waits for full asset load,
-captures the Room/Frame/Building/Current parks. Reports load time + console errors."""
+"""Comprehensive per-tier park capture. Loads fresh per tier via ?tier=, sets
+completedOnce (so jump-nav isn't reset by the wrap guard), captures all SIX parks
+with a double-scroll + settle. For diagnosing scene-bleed + per-tier lookdev."""
 import json, os, tempfile, time
 from playwright.sync_api import sync_playwright
 
@@ -9,8 +9,9 @@ BASE = f"http://localhost:{PORT}"
 OUT = os.path.join(tempfile.gettempdir(), "electrico-diag")
 os.makedirs(OUT, exist_ok=True)
 
-PARKS = [("room", 0.61), ("frame", 0.45), ("building", 0.29), ("current", 0.93), ("wiring", 0.77)]
-TIERS = ["full", "reduced", "minimal"]
+PARKS = [("city", 0.13), ("building", 0.29), ("frame", 0.45),
+         ("room", 0.61), ("wiring", 0.77), ("current", 0.93)]
+TIERS = ["reduced", "full"]
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=False, args=[
@@ -25,27 +26,19 @@ with sync_playwright() as p:
         t0 = time.time()
         page.goto(f"{BASE}/?tier={tier}", wait_until="domcontentloaded")
         page.bring_to_front()
-        load_ms = None
         for _ in range(120):
-            lp = page.evaluate("() => window.__experience ? window.__experience.getState().loadProgress : 0")
-            if lp >= 1:
-                load_ms = int((time.time() - t0) * 1000); break
-            page.wait_for_timeout(250)
-        q = page.evaluate("() => window.__experience ? window.__experience.getState().quality : '?'")
-        # Wait until Lenis has a real scroll limit (right after load it can be 0,
-        # so the first scrollTo(t*limit) lands at the hero).
-        for _ in range(40):
-            lim = page.evaluate("() => window.__lenis ? window.__lenis.limit : 0")
-            if lim and lim > 100:
+            if page.evaluate("()=>window.__experience&&window.__experience.getState().loadProgress>=1"):
                 break
-            page.wait_for_timeout(150)
-        page.wait_for_timeout(1500)
+            page.wait_for_timeout(250)
+        load_ms = int((time.time() - t0) * 1000)
+        page.wait_for_timeout(2000)
+        page.evaluate("()=>window.__experience&&window.__experience.getState().setCompletedOnce(true)")
         for name, t in PARKS:
-            page.evaluate("(t)=>{const l=window.__lenis; l.scrollTo(t*l.limit,{immediate:true});}", t)
-            page.wait_for_timeout(1500)
-            page.screenshot(path=os.path.join(OUT, f"{tier}-{name}.png"))
-        print(f"TIER {tier}: quality={q} load_ms={load_ms} errors={len(errors)}")
-        if errors:
-            print("  ", json.dumps(errors[:8]))
+            for _ in range(2):
+                page.evaluate("(t)=>{const l=window.__lenis; l.scrollTo(t*l.limit,{immediate:true});}", t)
+                page.wait_for_timeout(850)
+            page.screenshot(path=os.path.join(OUT, f"all-{tier}-{name}.png"))
+        q = page.evaluate("()=>window.__experience.getState().quality")
+        print(f"TIER {tier}: q={q} load_ms={load_ms} errors={len(errors)} {json.dumps(errors[:5])}")
         page.close()
     browser.close()
