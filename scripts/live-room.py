@@ -16,7 +16,7 @@ with sync_playwright() as p:
     page.goto(URL, wait_until="domcontentloaded")
     page.bring_to_front()
     page.wait_for_timeout(11000)
-    for frac in [0.42, 0.48, 0.54, 0.60]:
+    for frac in [0.555, 0.57, 0.585, 0.60]:
         page.evaluate("(f)=>window.scrollTo(0, document.body.scrollHeight*f)", frac)
         page.wait_for_timeout(2600)
         page.screenshot(path=os.path.join(OUT, f"room-{int(frac*100)}.png"))
