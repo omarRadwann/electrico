@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Static assets — the vendored Draco decoder is third-party minified JS.
+    "public/**",
+    // Python verification harnesses (not JS source).
+    "scripts/**",
   ]),
 ]);
 

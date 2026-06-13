@@ -282,7 +282,10 @@ export function FrameScene() {
     // surge nodes stay the accent. The visible energy comes from the surge mask
     // below, not this.
     if (matRef.current) {
-      matRef.current.emissiveIntensity = 0.1 + 0.025 * Math.sin(s.clock.elapsedTime * 1.4);
+      // Floor raised 0.1 → 0.5: at 0.1 the cage was invisible (only surge nodes
+      // showed as floating bright bits). 0.5 keeps the WHOLE steel cage legibly
+      // glowing as structure, with the GLOW_C surge as the bright accent on top.
+      matRef.current.emissiveIntensity = 0.5 + 0.08 * Math.sin(s.clock.elapsedTime * 1.4);
     }
 
     // SURGE-LIT STEEL: brighten each beam's instanceColor by proximity to the
@@ -343,9 +346,9 @@ export function FrameScene() {
             cause (briefing §4.3 #4). */}
         <meshStandardMaterial
           ref={matRef}
-          color="#0d0f14"
-          emissive="#5e7099"
-          emissiveIntensity={0.1}
+          color="#161b24"
+          emissive="#6f86b8"
+          emissiveIntensity={0.5}
           toneMapped
           metalness={0.9}
           roughness={0.66}

@@ -122,6 +122,13 @@ const TABLE_URL = asset("/models/coffeetable/CoffeeTable_01.glb");
 const CHAIR_URL = asset("/models/armchair/ArmChair_01.glb");
 const PLANT_URL = asset("/models/pottedplant/PottedPlant.glb");
 
+// SELF-HOST THE DRACO DECODER (was drei's gstatic CDN default). When that CDN is
+// slow or blocked — common on some regional networks — the Draco-compressed
+// furniture never decoded and the Room appeared EMPTY (the reported "can't see
+// the sofa"). Serving the decoder from our own origin removes that dependency and
+// speeds first decode. MUST run before any useGLTF(...,true)/preload below.
+useGLTF.setDecoderPath(asset("/draco/"));
+
 // preload MUST pass the same Draco flag as the load call below, or drei caches a
 // non-Draco loader and the Draco-compressed mesh fails to decode.
 useGLTF.preload(SOFA_URL, true);

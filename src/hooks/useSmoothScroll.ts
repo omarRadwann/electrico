@@ -58,7 +58,12 @@ export function useSmoothScroll(): void {
 
     // Imperative scroll-navigation channel (store module fn): HUD rail ticks /
     // skip controls map a dive progress onto Lenis' range without owning Lenis.
+    // A programmatic nav is a DELIBERATE forward jump (e.g. rail click 0 → 0.61),
+    // which would otherwise look identical to the backward-wrap below — so stamp
+    // the time and let the guard ignore the jump it causes.
+    let lastNav = -1e9;
     registerScrollToProgress((p, immediate) => {
+      lastNav = performance.now();
       lenis.scrollTo(p * lenis.limit, immediate ? { immediate: true } : { duration: 1.6 });
     });
 
@@ -68,9 +73,12 @@ export function useSmoothScroll(): void {
       // BACKWARD-WRAP GUARD: until the dive has been completed once, a
       // first-gesture scroll-UP wraps 0 → ~0.97 (the veil pops at half strength
       // and the Rig teleports to the climax). An UPWARD progress jump > 0.5 in
-      // one event can only be that wrap — snap back to 0 and drop this frame's
-      // store write. (Forward wraps 1 → 0 are a downward jump; unaffected.)
-      if (!st.completedOnce && l.progress - prevProgress > 0.5) {
+      // one event is that wrap — snap back to 0 and drop this frame's store write.
+      // EXCEPT when a programmatic nav (rail/skip) is in flight: those are
+      // intentional forward jumps and must be allowed (else rail nav bounces to
+      // the hero until the dive is completed once).
+      const navigating = performance.now() - lastNav < 2000;
+      if (!st.completedOnce && !navigating && l.progress - prevProgress > 0.5) {
         lenis.scrollTo(0, { immediate: true });
         prevProgress = 0;
         return;

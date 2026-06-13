@@ -37,7 +37,12 @@ export function Loader() {
     // Chromium-only — when absent we keep the 20s baseline.
     const conn = (navigator as Navigator & { connection?: { effectiveType?: string } })
       .connection;
-    const ceiling = conn?.effectiveType?.includes("2g") ? 30000 : 20000;
+    // Bounded entry: the City (first view) is procedural + needs only the engine
+    // chunk + the small night HDRI, so we never make the visitor wait for the full
+    // payload. The Room GLBs / surface maps stream in while they explore the City →
+    // Building → Frame (≈60% of the dive) and are ready before dimension 4. 9s
+    // baseline, 15s on confirmed 2g-class links where even the engine chunk crawls.
+    const ceiling = conn?.effectiveType?.includes("2g") ? 15000 : 9000;
     const f = setTimeout(() => setForceDone(true), ceiling);
     return () => {
       clearTimeout(t);

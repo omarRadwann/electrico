@@ -78,7 +78,7 @@ export function Lighting() {
         shadow-bias={-0.0006}
       />
       <Environment
-        files={asset("/hdri/dikhololo_night_1k.hdr")}
+        files={asset("/hdri/dikhololo_night_512.hdr")}
         environmentIntensity={envIntensity}
         background={false}
       >

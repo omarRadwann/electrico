@@ -40,12 +40,26 @@ export interface TierConfig {
 }
 
 export const TIERS: Record<QualityTier, TierConfig> = {
-  full: { dprMax: 2, dof: true, ao: true, grain: true, ca: true, reflectorRes: 96, shadowMapSize: 1024, envIntensity: 0.34, anisotropy: 8, props: true, heavyProps: true },
-  reduced: { dprMax: 1.5, dof: true, ao: false, grain: true, ca: true, reflectorRes: 0, shadowMapSize: 512, envIntensity: 0.3, anisotropy: 4, props: true, heavyProps: false },
+  // DOF is OFF on every tier: with drifting embers/sparks/surge-nodes scattered
+  // through the whole corridor, the bokeh blur turned every bright point into a
+  // huge out-of-focus ORB — the scene read as scattered blobs, not architecture.
+  // The crisp, readable scene is worth far more than the cinematic blur here.
+  full: { dprMax: 2, dof: false, ao: true, grain: true, ca: true, reflectorRes: 96, shadowMapSize: 1024, envIntensity: 0.34, anisotropy: 8, props: true, heavyProps: true },
+  reduced: { dprMax: 1.5, dof: false, ao: false, grain: true, ca: true, reflectorRes: 0, shadowMapSize: 512, envIntensity: 0.3, anisotropy: 4, props: true, heavyProps: false },
   minimal: { dprMax: 1, dof: false, ao: false, grain: false, ca: false, reflectorRes: 0, shadowMapSize: 512, envIntensity: 0.24, anisotropy: 1, props: true, heavyProps: false },
 };
 
 const ORDER: QualityTier[] = ["minimal", "reduced", "full"];
+
+/** Manual tier lock via ?tier=full|reduced|minimal (briefing §7 + debugging).
+ * When set, the GPU seed AND the PerformanceMonitor downgrade are both bypassed
+ * so the chosen tier renders verbatim (DPR pinned to the cap), which is the only
+ * way to judge a heavy tier on a slow GPU without the monitor reverting it. */
+function tierOverride(): QualityTier | null {
+  if (typeof window === "undefined") return null;
+  const v = new URLSearchParams(window.location.search).get("tier");
+  return v === "full" || v === "reduced" || v === "minimal" ? v : null;
+}
 
 /** Seed the tier from the GPU renderer string (before any heavy effect mounts). */
 function seedFromGPU(name: string | null): QualityTier {
@@ -83,6 +97,11 @@ export function QualityController() {
   // Boot seed (once).
   useEffect(() => {
     const st = useExperience.getState();
+    const override = tierOverride();
+    if (override) {
+      st.setQuality(override);
+      return; // locked — skip GPU seed AND reduced-motion pin
+    }
     if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
       st.setReducedMotion(true);
       st.setQuality("minimal");
@@ -124,11 +143,12 @@ export function QualityController() {
       bounds={(refresh) => [50, Math.max(60, refresh)]}
       onDecline={() => {
         const st = useExperience.getState();
-        if (st.reducedMotion) return;
+        if (st.reducedMotion || tierOverride()) return; // locked tier never downgrades
         const i = ORDER.indexOf(st.quality);
         if (i > 0) st.setQuality(ORDER[i - 1]);
       }}
       onChange={({ factor }) => {
+        if (tierOverride()) return; // locked tier renders at its cap, no DPR slope
         // BETWEEN-TIER FRACTIONAL DPR: degradation is a slope, not three cliffs.
         // PerformanceMonitor's factor boots at 0.5 (neutral) and can never rise
         // far on displays already pinned at their refresh rate — so factor ≥ 0.5

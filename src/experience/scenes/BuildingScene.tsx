@@ -382,9 +382,9 @@ export function BuildingScene() {
         <mesh key={idx} position={[x, y, z]}>
           <boxGeometry args={[w, h, d]} />
           <meshStandardMaterial
-            color="#131a26"
-            emissive="#241a12"
-            emissiveIntensity={0.6}
+            color="#222f44"
+            emissive="#161d2b"
+            emissiveIntensity={0.85}
             roughness={0.72}
             metalness={0.22}
             normalMap={concrete.normalMap}
