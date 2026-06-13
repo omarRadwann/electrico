@@ -353,7 +353,13 @@ const WALL_X_NEG = A.x - 4.4;
 const WALL_X_POS = A.x + 8.9;
 const WALL_Y0 = A.y - 7;
 const WALL_Y1 = A.y + 9;
-const WALL_Z0 = A.z + 31;
+// Cavity mouth pushed deeper (was A.z+31 = -143) to A.z+19 = -155, just past the
+// Room's back wall (z-152): the drywall slab + studs used to start at -143, INSIDE
+// the Room's z -127…-152, slabbing across it once the gate was removed. Now the
+// whole wall cavity clears the Room. The park (z-172) is still well inside the
+// cavity (-155…-195), and the brief mouth gap during the Room→Wiring transition
+// is masked by the boundary flash.
+const WALL_Z0 = A.z + 19;
 const WALL_Z1 = A.z - 21;
 const STUD_STEP = 4;
 const STUD_X = [WALL_X_NEG + 0.3, WALL_X_POS - 0.3];
@@ -554,18 +560,14 @@ export function WiringScene() {
   }, []);
 
   useFrame((_, dt) => {
-    // SCENE-BLEED GATE (same class as the Frame gate): the wall cavity starts at
-    // z≈-143 but the ROOM occupies z -152…-127, so the −x drywall slab + studs sit
-    // INSIDE the Room volume and rendered as a dark slab slicing the Room's far
-    // half (worsened now the cavity is lit brighter). Show Wiring only within its
-    // band: 0.69 = Room→Wiring boundary midpoint, 0.85 = Wiring→Current midpoint —
-    // both land under the boundary flash; the approach (p≈0.70) is inside the band.
-    const g = groupRef.current;
-    if (g) {
-      const p = useExperience.getState().progress;
-      g.visible = p > 0.69 && p < 0.85;
-      if (!g.visible) return; // also skips the pulse + spark uploads while hidden
-    }
+    // SCENE GATING REMOVED (was a P1 freeze): toggling `visible` to hide this
+    // scene caused a multi-SECOND compile-on-reveal GPU stall ("scene freezes then
+    // continues"). It now renders every frame (compiled once at load). To still
+    // keep its wall cavity OUT of the Room (the cavity used to start at z-143,
+    // inside the Room's z -127…-152, slabbing across it), the cavity mouth WALL_Z0
+    // was pushed deeper to clear the Room back wall — see WALL_Z0. So: no freeze
+    // AND no Room slab.
+    if (groupRef.current) groupRef.current.visible = true;
     // Traveling-pulse phase: base flow + scroll-velocity hurry (same soft-knee
     // normalization as the audio wind bus — Lenis velocity has no fixed unit).
     const v = Math.abs(useExperience.getState().velocity);

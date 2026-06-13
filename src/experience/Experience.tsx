@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Suspense, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { useExperience } from "@/src/store/useExperience";
 import { createRenderer } from "@/src/three/createRenderer";
 import { useSmoothScroll } from "@/src/hooks/useSmoothScroll";
 import { Hud } from "@/src/ui/Hud";
@@ -40,6 +41,37 @@ import { Effects } from "./Effects";
  * that makes the glow read. (M2's render-target portals/transitions are the next
  * refinement on top of this continuous fly-through.)
  */
+/**
+ * One-shot warm-up: after assets load, force every object (incl. the
+ * progress-gated Frame/Wiring groups, which mount invisible) visible, compile all
+ * shader programs, render once to upload geometry/instance buffers, then restore
+ * visibility. Runs while the Loader still covers the screen, so the camera never
+ * hits a first-use compile stall mid-dive. Kept inside <Suspense> so it waits for
+ * the GLBs; gated on loadProgress so it fires after the LoadingManager finishes.
+ */
+function Precompile() {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  const done = useRef(false);
+  useFrame(() => {
+    if (done.current) return;
+    if (useExperience.getState().loadProgress < 1) return;
+    done.current = true;
+    const hidden: THREE.Object3D[] = [];
+    scene.traverse((o) => {
+      if (!o.visible) {
+        hidden.push(o);
+        o.visible = true;
+      }
+    });
+    gl.compile(scene, camera);
+    gl.render(scene, camera); // forces program LINK + geometry/instance buffer upload
+    for (const o of hidden) o.visible = false;
+  });
+  return null;
+}
+
 export function Experience() {
   useSmoothScroll();
 
@@ -111,6 +143,17 @@ export function Experience() {
             <RoomProps />
             <WiringScene />
             <CurrentScene />
+            {/* PRE-COMPILE EVERYTHING under the loader (fixes the multi-second
+                "scene freezes then continues" hitch). The progress-gated scenes
+                (Frame p∈[0.30,0.53], Wiring p∈[0.69,0.85]) mount visible=false, so
+                ANGLE never compiled+linked their (heavy, onBeforeCompile) programs
+                nor uploaded their instance buffers at load — that happened the
+                first time the camera REVEALED them mid-scroll = a 4-8s GPU stall on
+                the Iris Xe. drei <Preload all/> proved insufficient here, so we do
+                it explicitly: once loadProgress hits 1, force EVERY object visible,
+                gl.compile + one render (compiles programs AND uploads buffers),
+                then restore. One-shot, runs while the loader still covers screen. */}
+            <Precompile />
           </Suspense>
 
           <AmbientDebris />

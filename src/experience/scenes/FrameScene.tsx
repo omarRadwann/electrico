@@ -48,7 +48,11 @@ const TH = 0.26; // member depth — at fly-through distance 0.16 was sub-pixel 
 const FRAME_TARGET = new THREE.Object3D();
 // THREE connected bays along −Z (the camera's forward look): a real tunnel of
 // steel receding ahead, not a single sparse cube. z spans continuous −96..−132.
-const BAY_Z = [A.z, A.z - 2 * S, A.z - 4 * S]; // -102, -114, -126
+// 3rd bay pulled forward (A.z-4S=-126 → A.z-3S=-120) so the cage's deepest beams
+// (~-126) sit BEHIND the Room camera (z-129 looking deeper to -138) instead of in
+// front of it (the old -132 beams rendered as cold blue bars across the Room once
+// the visibility gate was removed). Still a 3-bay receding tunnel at the park.
+const BAY_Z = [A.z, A.z - 2 * S, A.z - 3 * S]; // -102, -114, -120
 
 // Surge → emissive tuning. A node within FALLOFF_R of a beam's mid-point pushes
 // that beam's instanceColor up toward GLOW; beyond it the beam sits at BASE
@@ -276,22 +280,16 @@ export function FrameScene() {
   }, []);
 
   useFrame((s) => {
-    // SCENE-BLEED GATE: the Frame cage spans z −96…−132, which OVERLAPS the Room
-    // camera (z ≈ −129…−138) — so the cage's emissive beams were rendering across
-    // the Room as cold blue bars over the furniture. Show the Frame only within
-    // its own band (approach → dwell → exit); hide it for the Room and earlier
-    // dimensions. The Building aperture reveal (p≈0.34) is inside the band, so
-    // "seeing the steel beyond the doorway" still works. (getState — no re-render.)
-    const g = groupRef.current;
-    if (g) {
-      const p = useExperience.getState().progress;
-      // Upper bound 0.53 = the Frame→Room boundary: by p≈0.54 the HUD already
-      // reads THE ROOM and the furniture is framed, so the cage must be gone by
-      // then (it was bleeding beams over the sofa). The hide lands under the
-      // boundary flash. Lower bound 0.30 keeps it out of the pure Building park.
-      g.visible = p > 0.3 && p < 0.53;
-      if (!g.visible) return; // skip the per-frame surge work while off-screen
-    }
+    // SCENE GATING REMOVED (was a P1 freeze): toggling this group's `visible` to
+    // hide it outside its band caused a multi-SECOND GPU stall every time the
+    // camera REVEALED it ("scene freezes then continues") — ANGLE re-links the
+    // heavy onBeforeCompile steel programs + the transmission/reflector RT-pass
+    // variants on the first visible frame. So the Frame renders EVERY frame now
+    // (compiled once at load via <Precompile/>), which is smooth. At the Room park
+    // the cage sits BEHIND the camera (it looks deeper than the cage), so the only
+    // residual is a faint beam graze during the Frame→Room transition — masked by
+    // the boundary flash. The minor graze is the accepted trade vs the freeze.
+    if (groupRef.current) groupRef.current.visible = true;
     // MATERIAL TRUTH: a faint global breath on the FLOOR (loaded-but-idle), an
     // order of magnitude below the old 2.3±0.45 wash that drowned the maps. Floor
     // lowered (0.14 → 0.10) + the emissive desaturated so the resting cage reads as
