@@ -1,8 +1,7 @@
-"""Headed real-GPU smoke test of the LIVE deployed site. Prod strips dev hooks,
-so scroll is driven via window.scrollTo (the HUD gauge still reflects progress).
-Confirms: canvas mounts at real size, no console errors (Draco decode / asset
-404s included), and the 3D renders at the hero + a mid-dive position."""
-import json, os, tempfile
+"""Headed real-GPU smoke of the LIVE site, driven by real WHEEL events (prod strips
+the dev hooks, and Lenis intercepts wheel). Confirms: load OK, no console/Draco
+errors, and the dive renders deep (the Room sofa must appear — the reported bug)."""
+import json, os, tempfile, time
 from playwright.sync_api import sync_playwright
 
 URL = "https://omarradwann.github.io/electrico/"
@@ -16,29 +15,28 @@ with sync_playwright() as p:
         "--disable-background-timer-throttling", "--ignore-gpu-blocklist",
     ])
     page = browser.new_page(viewport={"width": 1440, "height": 900})
-    page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
-    page.on("pageerror", lambda e: errors.append("PAGEERROR: " + str(e)[:200]))
-    page.on("requestfailed", lambda r: errors.append("REQFAIL: " + r.url[-60:]))
-    page.goto(URL, wait_until="networkidle")
+    page.on("console", lambda m: errors.append(m.text[:160]) if m.type == "error" else None)
+    page.on("pageerror", lambda e: errors.append("PAGEERR: " + str(e)[:160]))
+    page.on("requestfailed", lambda r: errors.append("REQFAIL: " + r.url.split('/')[-1]))
+
+    t0 = time.time()
+    page.goto(URL, wait_until="domcontentloaded")
     page.bring_to_front()
-    page.wait_for_timeout(5000)  # loader + asset warmup
+    # Wait for the loader to dismiss (the scroll cue appears) or ~12s.
+    page.wait_for_timeout(11000)
+    print("INITIAL WAIT done @", int((time.time() - t0) * 1000), "ms")
+    page.screenshot(path=os.path.join(OUT, "v2-live-hero.png"))
 
-    health = page.evaluate("""() => {
-        const c = document.querySelector('.experience-root canvas');
-        const gl = c && (c.getContext('webgl2') || c.getContext('webgl'));
-        let r = null; if (gl){ const e=gl.getExtension('WEBGL_debug_renderer_info');
-          r = e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);}
-        return { canvas: c ? {w:c.width,h:c.height} : null, renderer: r,
-                 limit: Math.max(0, document.body.scrollHeight - innerHeight) };
-    }""")
-    print("HEALTH:", json.dumps(health, indent=2))
-    page.screenshot(path=os.path.join(OUT, "live-hero.png"))
+    # Wheel-scroll the dive in steps; screenshot at a few depths. The hub center is
+    # ~mid-viewport; wheel down advances Lenis. Big deltas + settle between shots.
+    depths = [("city", 6), ("building", 10), ("frame", 8), ("room", 14), ("current", 12)]
+    for name, ticks in depths:
+        for _ in range(ticks):
+            page.mouse.wheel(0, 900)
+            page.wait_for_timeout(120)
+        page.wait_for_timeout(1600)
+        page.screenshot(path=os.path.join(OUT, f"v2-live-{name}.png"))
+        print(f"shot v2-live-{name}")
 
-    # mid-dive (~Room) and near-end (~Current) via native scroll
-    for frac, name in [(0.61, "live-mid"), (0.95, "live-end")]:
-        page.evaluate("(f)=>window.scrollTo(0, document.body.scrollHeight*f)", frac)
-        page.wait_for_timeout(2500)
-        page.screenshot(path=os.path.join(OUT, name + ".png"))
-
-    print("ERRORS:", json.dumps(errors[:20], indent=2), " COUNT:", len(errors))
+    print("ERRORS:", json.dumps(errors[:20], indent=2), "COUNT:", len(errors))
     browser.close()

@@ -65,8 +65,11 @@ const PANEL_CX = -2.6;
 const PANEL_CY = FLOOR_Y + 5.2;
 
 const WOOD = new THREE.MeshStandardMaterial({ color: "#241a12", roughness: 0.85, metalness: 0.08 });
-const WALL = new THREE.MeshStandardMaterial({ color: "#2a201a", roughness: 0.92, metalness: 0.04 });
-const CEIL = new THREE.MeshStandardMaterial({ color: "#241c16", roughness: 0.95, metalness: 0.03 });
+// Walls/ceiling carry a faint WARM emissive floor so the cool moon key
+// (Lighting.tsx #9ec3ff directional) can't rake their grazing edges as cold blue
+// diagonal bars across the interior — the room stays warm from its own surfaces.
+const WALL = new THREE.MeshStandardMaterial({ color: "#2a201a", emissive: "#1a0f07", emissiveIntensity: 0.5, roughness: 0.92, metalness: 0.04 });
+const CEIL = new THREE.MeshStandardMaterial({ color: "#241c16", emissive: "#160d06", emissiveIntensity: 0.45, roughness: 0.95, metalness: 0.03 });
 const RUG = new THREE.MeshStandardMaterial({ color: "#2e2016", roughness: 0.97, metalness: 0.02 });
 const SHELF = new THREE.MeshStandardMaterial({ color: "#1d1510", roughness: 0.8, metalness: 0.06 });
 // LAMP / DEVICE / hub are LIT standard materials → toneMapped:true (the #1

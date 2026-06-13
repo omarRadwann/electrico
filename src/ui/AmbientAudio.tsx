@@ -97,9 +97,12 @@ export function AmbientAudio() {
     let level = 0;
     const tick = () => {
       const s = useExperience.getState();
-      const norm = 1 - Math.exp(-Math.abs(s.velocity) / 30);
+      // Only a genuine FAST flick should stir the wind — normal scrolling must
+      // stay silent (it was reading as a constant fan). High divisor (110) keeps
+      // medium scroll near-zero; the engine's ^2.8 curve finishes the job.
+      const norm = 1 - Math.exp(-Math.abs(s.velocity) / 110);
       const target = s.reducedMotion ? norm * 0.5 : norm;
-      level += (target - level) * (target > level ? 0.12 : 0.045);
+      level += (target - level) * (target > level ? 0.1 : 0.04);
       setWind(level);
       raf = requestAnimationFrame(tick);
     };

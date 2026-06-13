@@ -115,6 +115,7 @@ export function FrameScene() {
   const midpts = useRef<Float32Array>(new Float32Array(MAX_BEAMS * 3));
   const beamCount = useRef(0);
   const frameParity = useRef(0);
+  const groupRef = useRef<THREE.Group>(null);
 
   // I-beam profile — one geometry instanced across all members (one draw call).
   const beamGeo = useMemo(() => makeIBeamGeometry(), []);
@@ -275,6 +276,22 @@ export function FrameScene() {
   }, []);
 
   useFrame((s) => {
+    // SCENE-BLEED GATE: the Frame cage spans z −96…−132, which OVERLAPS the Room
+    // camera (z ≈ −129…−138) — so the cage's emissive beams were rendering across
+    // the Room as cold blue bars over the furniture. Show the Frame only within
+    // its own band (approach → dwell → exit); hide it for the Room and earlier
+    // dimensions. The Building aperture reveal (p≈0.34) is inside the band, so
+    // "seeing the steel beyond the doorway" still works. (getState — no re-render.)
+    const g = groupRef.current;
+    if (g) {
+      const p = useExperience.getState().progress;
+      // Upper bound 0.53 = the Frame→Room boundary: by p≈0.54 the HUD already
+      // reads THE ROOM and the furniture is framed, so the cage must be gone by
+      // then (it was bleeding beams over the sofa). The hide lands under the
+      // boundary flash. Lower bound 0.30 keeps it out of the pure Building park.
+      g.visible = p > 0.3 && p < 0.53;
+      if (!g.visible) return; // skip the per-frame surge work while off-screen
+    }
     // MATERIAL TRUTH: a faint global breath on the FLOOR (loaded-but-idle), an
     // order of magnitude below the old 2.3±0.45 wash that drowned the maps. Floor
     // lowered (0.14 → 0.10) + the emissive desaturated so the resting cage reads as
@@ -330,7 +347,7 @@ export function FrameScene() {
   });
 
   return (
-    <group>
+    <group ref={groupRef}>
       <instancedMesh
         ref={ref}
         args={[beamGeo, undefined, MAX_BEAMS]}

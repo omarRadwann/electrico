@@ -25,7 +25,7 @@ with sync_playwright() as p:
         # Unlock jump-nav: the backward-wrap guard otherwise resets large forward
         # scrollTo jumps to the hero until the dive is completed once.
         page.evaluate("()=>window.__experience&&window.__experience.getState().setCompletedOnce(true)")
-        for name, t in [("room", 0.61), ("current", 0.93), ("wiring", 0.77), ("building", 0.29)]:
+        for name, t in [("frame", 0.45), ("frameexit", 0.55), ("room", 0.61)]:
             # double scroll — first primes, second lands
             for _ in range(2):
                 page.evaluate("(t)=>{const l=window.__lenis; l.scrollTo(t*l.limit,{immediate:true});}", t)

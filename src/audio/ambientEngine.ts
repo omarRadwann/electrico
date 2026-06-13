@@ -44,9 +44,14 @@ let started = false;
 let enabled = false;
 let curDim = 0;
 
-const MASTER_ON = 0.16;
+const MASTER_ON = 0.15;
 const HIDDEN_DUCK = 0.1; // fraction of MASTER_ON while document.hidden
-const WIND_MAX = 0.2; // wind-bus gain ceiling — present under fast flicks, never dominant
+// Wind-bus ceiling. Kept LOW: this is keyed to scroll velocity, and on a
+// scroll-driven site you scroll almost constantly — at the old 0.2 the
+// mid-band noise read as "a laptop fan on full". It must be a faint rush on a
+// hard flick, never an audible bed. (Paired with a steep velocity curve in
+// AmbientAudio so normal scrolling produces ~zero wind.)
+const WIND_MAX = 0.04;
 
 // Seeded PRNG (project rule: seeded randomness; also gives every visit the same
 // sonic character — ping pitches, crackle texture, IR grain are deterministic).
@@ -125,10 +130,11 @@ export function ensureStarted(): void {
   tints = [0, 1, 2, 3, 4, 5].map((i) => buildTintVoice(c, i, bus as GainNode));
 
   // Faint filtered-noise texture (electrical air) — always on, under everything.
+  // Barely-there: a whisper of air, not a wash (was 0.04 = part of the "fan").
   {
     const g = c.createGain();
-    g.gain.value = 0.04;
-    noiseLoop(c, filt(c, "bandpass", 780, 0.7)).connect(g);
+    g.gain.value = 0.008;
+    noiseLoop(c, filt(c, "bandpass", 520, 1.1)).connect(g);
     g.connect(bus);
   }
 
@@ -200,9 +206,11 @@ export function setWind(level: number): void {
   const l = clamp(level, 0, 1);
   const t = ctx.currentTime;
   windGain.gain.cancelScheduledValues(t);
-  windGain.gain.setTargetAtTime(Math.pow(l, 1.4) * WIND_MAX, t, 0.06);
+  // Steep curve (^2.8): slow/medium scroll stays silent, only a hard flick lifts
+  // the wind. Duller band (260–760Hz) reads as soft moving AIR, not a fan hiss.
+  windGain.gain.setTargetAtTime(Math.pow(l, 2.8) * WIND_MAX, t, 0.08);
   windFilter.frequency.cancelScheduledValues(t);
-  windFilter.frequency.setTargetAtTime(550 + l * 1300, t, 0.12);
+  windFilter.frequency.setTargetAtTime(260 + l * 500, t, 0.14);
 }
 
 /**
@@ -310,10 +318,10 @@ function buildTintVoice(c: AudioContext, i: number, out: GainNode): GainNode {
       lfo(c, 0.06, 0.16, vg.gain);
       tone(c, "sine", 55.5, 0.2, vg); // beats slowly against the 55/55.3 drone
       tone(c, "sine", 110.2, 0.16, vg);
-      const traffic = filt(c, "lowpass", 230, 0.4);
-      lfo(c, 0.08, 80, traffic.frequency);
+      const traffic = filt(c, "lowpass", 200, 0.4);
+      lfo(c, 0.08, 70, traffic.frequency);
       const tgain = c.createGain();
-      tgain.gain.value = 0.12;
+      tgain.gain.value = 0.045; // distant low rumble, not a foreground wash
       noiseLoop(c, traffic).connect(tgain);
       tgain.connect(vg);
       break;
@@ -323,10 +331,10 @@ function buildTintVoice(c: AudioContext, i: number, out: GainNode): GainNode {
       // hollow lowpassed 82Hz tone (the unfinished concrete shell resonating).
       vg.gain.value = 0.85;
       lfo(c, 0.09, 0.18, vg.gain);
-      const wind = filt(c, "bandpass", 460, 0.7);
-      lfo(c, 0.13, 200, wind.frequency);
+      const wind = filt(c, "bandpass", 360, 0.6);
+      lfo(c, 0.13, 150, wind.frequency);
       const wgain = c.createGain();
-      wgain.gain.value = 0.17;
+      wgain.gain.value = 0.055; // a soft hollow draft, well below the tone
       noiseLoop(c, wind).connect(wgain);
       wgain.connect(vg);
       const hollow = filt(c, "lowpass", 240, 0.8);
@@ -464,7 +472,19 @@ function playCrackle(c: AudioContext): void {
 function makeNoiseBuffer(c: AudioContext, seconds: number): AudioBuffer {
   const buf = c.createBuffer(1, Math.floor(c.sampleRate * seconds), c.sampleRate);
   const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = (rng() * 2 - 1) * 0.5;
+  // PINK-ISH, not raw white: a one-pole lowpass rolls off the harsh top end so
+  // every noise bed reads as soft air/rumble instead of TV-static hiss — a big
+  // part of why the bed sounded like a fan. Renormalized to ±0.5 after filtering.
+  let lp = 0;
+  let max = 1e-6;
+  for (let i = 0; i < d.length; i++) {
+    lp += ((rng() * 2 - 1) - lp) * 0.32;
+    d[i] = lp;
+    const a = Math.abs(lp);
+    if (a > max) max = a;
+  }
+  const norm = 0.5 / max;
+  for (let i = 0; i < d.length; i++) d[i] *= norm;
   return buf;
 }
 
